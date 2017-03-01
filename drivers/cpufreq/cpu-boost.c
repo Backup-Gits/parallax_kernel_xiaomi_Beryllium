@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2013-2015,2017, The Linux Foundation. All rights reserved.
- * Copyright (c) 2017-2018, Paranoid Android.
- * Copyright (C) 2017-2018, Razer Inc.
+ * Copyright (c) 2017, Paranoid Android.
+ * Copyright (C) 2017, Razer Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -59,6 +59,9 @@ static struct delayed_work dynamic_stune_boost_rem;
 
 static struct delayed_work input_boost_rem;
 static u64 last_input_time;
+
+static struct kthread_worker cpu_boost_worker;
+static struct task_struct *cpu_boost_worker_thread;
 
 #define MIN_INPUT_INTERVAL (100 * USEC_PER_MSEC)
 
@@ -343,20 +346,12 @@ static int cpu_boost_init(void)
 {
 	int cpu, ret, i;
 	struct cpu_sync *s;
-	struct sched_param param = { .sched_priority = 2 };
-	cpumask_t sys_bg_mask;
-
-	/* Hardcode the cpumask to bind the kthread to it */
-	cpumask_clear(&sys_bg_mask);
-	for (i = 0; i <= 3; i++) {
-		cpumask_set_cpu(i, &sys_bg_mask);
-	}
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 2 };
 
 	kthread_init_worker(&cpu_boost_worker);
-	cpu_boost_worker_thread = kthread_create(kthread_worker_fn,
+	cpu_boost_worker_thread = kthread_run(kthread_worker_fn,
 		&cpu_boost_worker, "cpu_boost_worker_thread");
-	if (IS_ERR(cpu_boost_worker_thread)) {
-		pr_err("cpu-boost: Failed to init kworker!\n");
+	if (IS_ERR(cpu_boost_worker_thread))
 		return -EFAULT;
 	}
 
@@ -370,6 +365,7 @@ static int cpu_boost_init(void)
 	/* Wake it up! */
 	wake_up_process(cpu_boost_worker_thread);
 
+	sched_setscheduler(cpu_boost_worker_thread, SCHED_FIFO, &param);
 	kthread_init_work(&input_boost_work, do_input_boost);
 	INIT_DELAYED_WORK(&input_boost_rem, do_input_boost_rem);
 #ifdef CONFIG_DYNAMIC_STUNE_BOOST
