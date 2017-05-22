@@ -24,7 +24,6 @@ static const struct file_operations cmdline_proc_fops = {
 	.release	= single_release,
 };
 
-#ifdef REMOVE_SAFETYNET_FLAGS
 static void remove_flag(char *cmd, const char *flag)
 {
 	char *start_addr, *end_addr;
@@ -41,83 +40,21 @@ static void remove_flag(char *cmd, const char *flag)
 
 static void remove_safetynet_flags(char *cmd)
 {
+	remove_flag(cmd, "androidboot.enable_dm_verity=");
+	remove_flag(cmd, "androidboot.secboot=");
+	remove_flag(cmd, "androidboot.verifiedbootstate=");
 	remove_flag(cmd, "androidboot.veritymode=");
 }
-#endif
-
-#if 1
-
-static char *padding = "                ";
-
-static void replace_flag(char *cmd, const char *flag, const char *flag_new)
-{
-	char *start_addr, *end_addr;
-
-	/* Ensure all instances of a flag are replaced */
-	while ((start_addr = strstr(cmd, flag))) {
-		end_addr = strchr(start_addr, ' ');
-		if (end_addr) {
-			if (strlen(flag)<strlen(flag_new)) {
-				// xx yy=a zz
-				//    ^   ^
-				// xx yy=bb zz
-				int length_to_copy = strlen( start_addr + (strlen(flag) ) ) + 1; // +1 to copy trailing '/0'
-				int length_diff = strlen(flag_new)-strlen(flag);
-				memcpy(start_addr+(strlen(flag)+length_diff), start_addr+(strlen(flag)), length_to_copy);
-				memcpy(start_addr+(strlen(flag)), padding, length_diff);
-			}
-			memcpy(start_addr, flag_new, strlen(flag_new));
-		}
-		else
-			*(start_addr - 1) = '\0';
-	}
-}
-
-static void replace_safetynet_flags(char *cmd)
-{
-	// WARNING: be aware that you can't replace shorter string with longer ones in the function called here...
-	replace_flag(cmd, "androidboot.vbmeta.device_state=unlocked",
-			  "androidboot.vbmeta.device_state=locked  ");
-	replace_flag(cmd, "androidboot.enable_dm_verity=0",
-			  "androidboot.enable_dm_verity=1");
-	replace_flag(cmd, "androidboot.secboot=disabled",
-			  "androidboot.secboot=enabled ");
-	replace_flag(cmd, "androidboot.verifiedbootstate=orange",
-			  "androidboot.verifiedbootstate=green ");
-#ifndef REMOVE_SAFETYNET_FLAGS
-	replace_flag(cmd, "androidboot.veritymode=logging",
-			  "androidboot.veritymode=enforcing");
-	replace_flag(cmd, "androidboot.veritymode=eio",
-			  "androidboot.veritymode=enforcing");
-#endif
-
-}
-#endif
 
 static int __init proc_cmdline_init(void)
 {
-	char *offset_addr, *cmd = new_command_line;
-
-	strcpy(cmd, saved_command_line);
+	strcpy(new_command_line, saved_command_line);
 
 	/*
-	 * Remove 'androidboot.verifiedbootstate' flag from command line seen
-	 * by userspace in order to pass SafetyNet CTS check.
+	 * Remove various flags from command line seen by userspace in order to
+	 * pass SafetyNet CTS check.
 	 */
-	offset_addr = strstr(cmd, "androidboot.verifiedbootstate=");
-	if (offset_addr) {
-		size_t i, len, offset;
-
-		len = strlen(cmd);
-		offset = offset_addr - cmd;
-
-		for (i = 1; i < (len - offset); i++) {
-			if (cmd[offset + i] == ' ')
-				break;
-		}
-
-		memmove(offset_addr, &cmd[offset + i + 1], len - i - offset);
-	}
+	remove_safetynet_flags(new_command_line);
 
 	proc_create("cmdline", 0, NULL, &cmdline_proc_fops);
 	return 0;
