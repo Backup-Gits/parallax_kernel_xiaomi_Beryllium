@@ -83,6 +83,7 @@
 #include <linux/kaiser.h>
 #include <linux/cache.h>
 #include <linux/jump_label.h>
+#include <linux/scs.h>
 
 #include <asm/io.h>
 #include <asm/bugs.h>
