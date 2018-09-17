@@ -9,7 +9,7 @@
 #include <linux/slab.h>
 #include <linux/init.h>
 
-#define MAX_WRITES_STARVED 12
+#define MAX_WRITES_STARVED 8
 
 enum {ASYNC, SYNC};
 
