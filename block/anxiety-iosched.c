@@ -14,8 +14,8 @@
 enum {ASYNC, SYNC};
 
 struct anxiety_data {
-	struct list_head queue[2][2];
-	size_t writes_starved;
+	struct list_head queue[2];
+	unsigned int writes_starved;
 };
 
 static void anxiety_merged_requests(struct request_queue *q, struct request *rq, struct request *next)
