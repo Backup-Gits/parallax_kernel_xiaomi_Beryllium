@@ -94,6 +94,8 @@
 
 #define PROC_SYMLINK_PATH "touchpanel"
 
+#define PROC_SYMLINK_PATH "touchpanel"
+
 /**
  * Event handler installer helpers
  */
@@ -3210,6 +3212,42 @@ static ssize_t fts_wake_gesture_store(struct device *dev,
 	return count;
 }
 
+static ssize_t fts_wake_gesture_store(struct device *dev,
+					struct device_attribute *attr,
+					const char *buf, size_t count)
+{
+	unsigned int input = 0;
+	static const char *fts_gesture_on = "01 20";
+	static const char *fts_gesture_off = "00 20";
+	struct fts_ts_info *info = dev_get_drvdata(dev);
+	char *gesture_result;
+	int size = 6 * 2 + 1;
+	if (sscanf(buf, "%u", &input) != 1)
+		return -EINVAL;
+
+	if (input == 1) {
+		gesture_result = (u8 *) kzalloc(size, GFP_KERNEL);
+		fts_gesture_mask_store(info->dev, NULL,
+				fts_gesture_on, strlen(fts_gesture_on));
+		fts_gesture_mask_show(info->dev, NULL,
+				gesture_result);
+	} else {
+		gesture_result = (u8 *) kzalloc(size, GFP_KERNEL);
+		fts_gesture_mask_store(info->dev, NULL,
+				fts_gesture_off, strlen(fts_gesture_off));
+		fts_gesture_mask_show(info->dev, NULL,
+				gesture_result);
+	}
+
+	if (strncmp("{ 00000000 }", gesture_result, size - 1))
+		logError(1, "%s %s: store gesture mask error\n", tag, __func__);
+
+	kfree(gesture_result);
+	gesture_result = NULL;
+
+	return count;
+}
+
 static DEVICE_ATTR(fts_lockdown, (S_IRUGO | S_IWUSR | S_IWGRP),
 		   fts_lockdown_show, fts_lockdown_store);
 static DEVICE_ATTR(fwupdate, (S_IRUGO | S_IWUSR | S_IWGRP), fts_fwupdate_show,
@@ -3273,14 +3311,6 @@ static DEVICE_ATTR(grip_enable, (S_IRUGO | S_IWUSR | S_IWGRP),
 		   fts_grip_enable_show, fts_grip_enable_store);
 static DEVICE_ATTR(grip_area, (S_IRUGO | S_IWUSR | S_IWGRP),
 		   fts_grip_area_show, fts_grip_area_store);
-static DEVICE_ATTR(wake_gesture, (S_IRUGO | S_IWUSR),
-		   fts_gesture_mask_show, fts_wake_gesture_store);
-
-#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE_GAMEMODE
-static DEVICE_ATTR(touchgame, (S_IRUGO | S_IWUSR | S_IWGRP),
-		   fts_touchgame_show, NULL);
-#endif
-
 static DEVICE_ATTR(wake_gesture, (S_IRUGO | S_IWUSR),
 		   fts_gesture_mask_show, fts_wake_gesture_store);
 
