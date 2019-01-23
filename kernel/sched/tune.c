@@ -945,7 +945,7 @@ static struct cftype files[] = {
 	{
 		.name = "sched_boost_no_override",
 		.read_u64 = sched_boost_override_read,
-		.write_u64 = sched_boost_override_write_wrapper,
+		.write_u64 = sched_boost_override_write,
 	},
 	{
 		.name = "colocate",
