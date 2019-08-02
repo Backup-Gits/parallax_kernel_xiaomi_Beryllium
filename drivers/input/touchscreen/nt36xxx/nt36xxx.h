@@ -27,7 +27,7 @@
 
 #include <linux/pm_qos.h>
 
-#include "nt36xxx_mem_map.h"
+#include <linux/pm_qos.h>
 
 #define PINCTRL_STATE_ACTIVE		"pmx_ts_active"
 #define PINCTRL_STATE_SUSPEND		"pmx_ts_suspend"

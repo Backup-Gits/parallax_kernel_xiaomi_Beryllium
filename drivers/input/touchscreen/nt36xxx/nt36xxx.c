@@ -1142,8 +1142,16 @@ static void nvt_ts_work_func(void)
 	ret = CTP_I2C_READ(ts->client, I2C_FW_Address, point_data, POINT_DATA_LEN + 1);
 	if (unlikely(ret < 0)) {
 		NVT_ERR("CTP_I2C_READ failed.(%d)\n", ret);
-		goto out;
+		goto XFER_ERROR;
 	}
+/*
+	//--- dump I2C buf ---
+	for (i = 0; i < 10; i++) {
+		printk("%02X %02X %02X %02X %02X %02X  ",
+			point_data[1+i*6], point_data[2+i*6], point_data[3+i*6], point_data[4+i*6], point_data[5+i*6], point_data[6+i*6]);
+	}
+	printk("\n");
+*/
 
 #if WAKEUP_GESTURE
 	if (unlikely(bTouchIsAwake == 0)) {
@@ -1252,6 +1260,7 @@ return:
 *******************************************************/
 static irqreturn_t nvt_ts_irq_handler(int32_t irq, void *dev_id)
 {
+	disable_irq_nosync(ts->client->irq);
 	if (bTouchIsAwake == 0) {
 		dev_dbg(&ts->client->dev, "%s gesture wakeup\n", __func__);
 	}
@@ -1559,65 +1568,14 @@ static ssize_t nvt_panel_display_show(struct device *dev,
 	return scnprintf(buf, PAGE_SIZE, "%c\n", ts->lockdown_info[1]);
 }
 
-static ssize_t nvt_panel_gesture_enable_show(struct device *dev,
-				     struct device_attribute *attr, char *buf)
-{
-        const char c = ts->gesture_enabled ? '1' : '0';
-        return sprintf(buf, "%c\n", c);
-}
-
-static ssize_t nvt_panel_gesture_enable_store(struct device *dev,
-				     struct device_attribute *attr, const char *buf, size_t count)
-{
-	int i;
-
-	if (sscanf(buf, "%u", &i) == 1 && i < 2) {
-		ts->gesture_enabled = i;
-		return count;
-	} else {
-		dev_dbg(dev, "gesture_enable write error\n");
-		return -EINVAL;
-	}
-}
-
-static ssize_t novatek_input_symlink(struct nvt_ts_data *ts) {
-	char *driver_path;
-	int ret = 0;
-	if (ts->input_proc) {
-		proc_remove(ts->input_proc);
-		ts->input_proc = NULL;
-	}
-	driver_path = kzalloc(PATH_MAX, GFP_KERNEL);
-	if (!driver_path) {
-		pr_err("%s: failed to allocate memory\n", __func__);
-		return -ENOMEM;
-	}
-
-	sprintf(driver_path, "/sys%s",
-			kobject_get_path(&ts->client->dev.kobj, GFP_KERNEL));
-
-	pr_err("%s: driver_path=%s\n", __func__, driver_path);
-
-	ts->input_proc = proc_symlink(PROC_SYMLINK_PATH, NULL, driver_path);
-
-	if (!ts->input_proc) {
-		ret = -ENOMEM;
-	}
-	kfree(driver_path);
-	return ret;
-}
-
 static DEVICE_ATTR(panel_vendor, (0444), nvt_panel_vendor_show, NULL);
 static DEVICE_ATTR(panel_color, (0444), nvt_panel_color_show, NULL);
 static DEVICE_ATTR(panel_display, (0444), nvt_panel_display_show, NULL);
-static DEVICE_ATTR(gesture_enable, S_IWUSR | S_IRUSR,
-		nvt_panel_gesture_enable_show, nvt_panel_gesture_enable_store);
 
 static struct attribute *nvt_attr_group[] = {
 	&dev_attr_panel_vendor.attr,
 	&dev_attr_panel_color.attr,
 	&dev_attr_panel_display.attr,
-	&dev_attr_gesture_enable.attr,
 	NULL,
 };
 
@@ -1904,6 +1862,10 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
 err_register_drm_notif_failed:
 	drm_unregister_client(&ts->notifier);
 #endif
+#if NVT_TOUCH_MP
+nvt_mp_proc_deinit();
+err_mp_proc_init_failed:
+#endif
 #if NVT_TOUCH_EXT_PROC
 nvt_extra_proc_deinit();
 err_extra_proc_init_failed:
@@ -1999,6 +1961,10 @@ static int32_t nvt_ts_remove(struct i2c_client *client)
 	}
 
 	pm_qos_remove_request(&ts->pm_qos_req);
+
+	free_irq(client->irq, ts);
+	input_unregister_device(ts->input_dev);
+	i2c_set_clientdata(client, NULL);
 
 	free_irq(client->irq, ts);
 	input_unregister_device(ts->input_dev);
@@ -2319,7 +2285,6 @@ return:
 static void __exit nvt_driver_exit(void)
 {
 	i2c_del_driver(&nvt_i2c_driver);
-	kmem_cache_destroy(kmem_ts_data_pool);
 
 	if (nvt_wq)
 		destroy_workqueue(nvt_wq);

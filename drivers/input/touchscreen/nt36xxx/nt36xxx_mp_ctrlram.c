@@ -1662,7 +1662,70 @@ static int nvt_open_test(void)
 	/*---Leave Test Mode---*/
 	nvt_change_mode(NORMAL_MODE);
 
-	return 0;
+	/*---Open Test---*/
+	if (nvt_read_fw_open(RawData_Open) != 0) {
+		TestResult_Open = 1;	/* 1:ERROR */
+	} else {
+		/*---Self Test Check --- 0:PASS, -1:FAIL */
+		TestResult_Open = RawDataTest_SinglePoint_Sub(RawData_Open, RecordResult_Open, X_Channel, Y_Channel,
+											PS_Config_Lmt_Open_Rawdata_P, PS_Config_Lmt_Open_Rawdata_N);
+	}
+
+	/*---Reset IC---*/
+	nvt_bootloader_reset();
+
+	mutex_unlock(&ts->lock);
+
+	NVT_LOG("--\n");
+
+	return TestResult_Open;
+}
+
+static ssize_t nvt_selftest_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
+{
+	char tmp[5] = {0};
+	int cnt;
+
+	if (*pos != 0)
+		return 0;
+	cnt = snprintf(tmp, sizeof(ts->result_type), "%d\n", ts->result_type);
+	if (copy_to_user(buf, tmp, strlen(tmp))) {
+		return -EFAULT;
+	}
+
+	*pos += cnt;
+	return cnt;
+}
+
+static ssize_t nvt_selftest_write(struct file *file, const char __user *buf, size_t count, loff_t *pos)
+{
+	int retval = 0;
+	char tmp[6];
+
+	if (copy_from_user(tmp, buf, count)) {
+		retval = -EFAULT;
+		goto out;
+	}
+
+	if (!strncmp("short", tmp, 5)) {
+		retval = nvt_short_test();
+	} else if (!strncmp("open", tmp, 4)) {
+		retval = nvt_open_test();
+	} else if (!strncmp("i2c", tmp, 3))
+		retval = nvt_get_fw_info();
+
+	if (retval < 0)
+		ts->result_type = NVT_RESULT_INVALID;
+	else if (retval == 0)
+		ts->result_type = NVT_RESULT_PASS;
+	else
+		ts->result_type = NVT_RESULT_FAIL;
+
+out:
+	if (retval >= 0)
+		retval = count;
+
+	return retval;
 }
 #endif /* #ifdef CONFIG_OF */
 
