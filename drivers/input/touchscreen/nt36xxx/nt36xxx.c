@@ -1149,7 +1149,8 @@ static void nvt_ts_work_func(void)
 	if (unlikely(bTouchIsAwake == 0)) {
 		input_id = (uint8_t)(point_data[1] >> 3);
 		nvt_ts_wakeup_gesture_report(input_id, point_data);
-		goto out;
+		goto XFER_ERROR;
+		return;
 	}
 #endif
 
@@ -1234,9 +1235,11 @@ static void nvt_ts_work_func(void)
 	}
 #endif
 
+XFER_ERROR:
 	input_sync(ts->input_dev);
 
-out:
+	enable_irq(ts->client->irq);
+
 	mutex_unlock(&ts->lock);
 }
 
