@@ -50,6 +50,8 @@ extern void nvt_mp_proc_deinit(void);
 struct nvt_ts_data *ts;
 struct kmem_cache *kmem_ts_data_pool;
 
+static struct workqueue_struct *nvt_wq;
+
 #if BOOT_UPDATE_FIRMWARE
 static struct workqueue_struct *nvt_fwu_wq;
 extern void Boot_Update_Firmware(struct work_struct *work);
@@ -1965,10 +1967,6 @@ static int32_t nvt_ts_remove(struct i2c_client *client)
 	free_irq(client->irq, ts);
 	input_unregister_device(ts->input_dev);
 	i2c_set_clientdata(client, NULL);
-
-	free_irq(client->irq, ts);
-	input_unregister_device(ts->input_dev);
-	i2c_set_clientdata(client, NULL);
 	kmem_cache_free(kmem_ts_data_pool, ts);
 
 	return 0;
@@ -2285,6 +2283,7 @@ return:
 static void __exit nvt_driver_exit(void)
 {
 	i2c_del_driver(&nvt_i2c_driver);
+	kmem_cache_destroy(kmem_ts_data_pool);
 
 	if (nvt_wq)
 		destroy_workqueue(nvt_wq);
