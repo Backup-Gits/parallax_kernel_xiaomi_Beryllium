@@ -1134,7 +1134,7 @@ static void nvt_ts_work_func(void)
 		ret = wait_for_completion_timeout(&ts->dev_pm_suspend_completion, msecs_to_jiffies(500));
 		if (!ret) {
 			NVT_ERR("system(i2c) can't finished resuming procedure, skip it\n");
-			goto out;
+			goto XFER_ERROR;
 		}
 	}
 #endif
