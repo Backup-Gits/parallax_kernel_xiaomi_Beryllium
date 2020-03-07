@@ -58,7 +58,7 @@ extern void Boot_Update_Firmware(struct work_struct *work);
 #endif
 
 #if defined(CONFIG_DRM)
-static int drm_notifier_callback(struct notifier_block *self, unsigned long event, void *data);
+static int nvt_drm_notifier_callback(struct notifier_block *self, unsigned long event, void *data);
 #endif
 
 #define INPUT_EVENT_START			0
@@ -1104,6 +1104,87 @@ static int mi_input_event(struct input_dev *dev, unsigned int type, unsigned int
 }
 #endif
 
+#if WAKEUP_GESTURE
+#define EVENT_START				0
+#define EVENT_SENSITIVE_MODE_OFF		0
+#define EVENT_SENSITIVE_MODE_ON			1
+#define EVENT_STYLUS_MODE_OFF			2
+#define EVENT_STYLUS_MODE_ON			3
+#define EVENT_WAKEUP_MODE_OFF			4
+#define EVENT_WAKEUP_MODE_ON			5
+#define EVENT_COVER_MODE_OFF			6
+#define EVENT_COVER_MODE_ON			7
+#define EVENT_SLIDE_FOR_VOLUME			8
+#define EVENT_DOUBLE_TAP_FOR_VOLUME		9
+#define EVENT_SINGLE_TAP_FOR_VOLUME		10
+#define EVENT_LONG_SINGLE_TAP_FOR_VOLUME	11
+#define EVENT_PALM_OFF				12
+#define EVENT_PALM_ON				13
+#define EVENT_END				13
+/*******************************************************
+Description:
+	Xiaomi modeswitch work function.
+
+return:
+	n.a.
+*******************************************************/
+static void mi_switch_mode_work(struct work_struct *work)
+{
+	struct mi_mode_switch *ms = container_of(
+			work, struct mi_mode_switch, switch_mode_work
+	);
+	struct nvt_ts_data *data = ms->nvt_data;
+	unsigned char value = ms->mode;
+
+	if (value >= EVENT_WAKEUP_MODE_OFF &&
+		value <= EVENT_WAKEUP_MODE_ON)
+		data->gesture_enabled = value - EVENT_WAKEUP_MODE_OFF;
+	else
+		NVT_ERR("Does not support touch mode %d\n", value);
+
+	if (ms != NULL) {
+		kfree(ms);
+		ms = NULL;
+	}
+}
+
+/*******************************************************
+Description:
+	Xiaomi input events function.
+
+return:
+	n.a.
+*******************************************************/
+static int mi_input_event(struct input_dev *dev, unsigned int type, unsigned int code, int value)
+{
+	struct nvt_ts_data *data = input_get_drvdata(dev);
+	struct mi_mode_switch *ms;
+
+	if (type == EV_SYN && code == SYN_CONFIG) {
+		NVT_LOG("set input event value = %d\n", value);
+
+		if (value >= EVENT_START && value <= EVENT_END) {
+			ms = kmalloc(sizeof(struct mi_mode_switch), GFP_ATOMIC);
+
+			if (ms != NULL) {
+				ms->nvt_data = data;
+				ms->mode = (unsigned char)value;
+				INIT_WORK(&ms->switch_mode_work, mi_switch_mode_work);
+				schedule_work(&ms->switch_mode_work);
+			} else {
+				NVT_ERR("Modeswitch memory allocation failed\n");
+				return -ENOMEM;
+			}
+		} else {
+			NVT_ERR("Invalid event value\n");
+			return -EINVAL;
+		}
+	}
+
+	return 0;
+}
+#endif
+
 #define POINT_DATA_LEN 65
 /*******************************************************
 Description:
@@ -1488,20 +1569,9 @@ out:
 	return ret;
 }
 
-static int tpdbg_release(struct inode *inode, struct file *file)
-{
-	file->private_data = NULL;
-
-	return 0;
-}
-
-static const struct file_operations tpdbg_operations = {
-	.owner = THIS_MODULE,
-	.open = tpdbg_open,
-	.read = tpdbg_read,
-	.write = tpdbg_write,
-	.release = tpdbg_release,
-};
+/*******************************************************
+Description:
+	Xiaomi pinctrl init function.
 
 return:
 	Executive outcomes. 0---succeed. negative---failed
@@ -1872,34 +1942,6 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
 	}
 #endif
 
-	ts->attrs.attrs = nvt_attr_group;
-	ret = sysfs_create_group(&client->dev.kobj, &ts->attrs);
-	if (ret) {
-		NVT_ERR("Cannot create sysfs structure!\n");
-	}
-
-	ret = novatek_input_symlink(ts);
-	if (ret < 0) {
-		NVT_ERR("Failed to symlink input device!\n");
-	}
-
-	ts->event_wq = alloc_workqueue("nvt-event-queue",
-			    WQ_UNBOUND | WQ_HIGHPRI | WQ_CPU_INTENSIVE, 1);
-	if (!ts->event_wq) {
-		NVT_ERR("ERROR: Cannot create work thread\n");
-		goto err_register_drm_notif_failed;
-	}
-
-	INIT_WORK(&ts->resume_work, nvt_resume_work);
-
-	ts->debugfs = debugfs_create_dir("tp_debug", NULL);
-	if (ts->debugfs) {
-		debugfs_create_file("switch_state", 0660, ts->debugfs, ts, &tpdbg_operations);
-	} else {
-		NVT_ERR("ERROR: Cannot create tp_debug\n");
-		goto err_pm_workqueue;
-	}
-
 	bTouchIsAwake = 1;
 	NVT_LOG("end\n");
 
@@ -1909,7 +1951,8 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
 
 #if defined(CONFIG_DRM)
 err_register_drm_notif_failed:
-	drm_unregister_client(&ts->notifier);
+	if (drm_unregister_client(&ts->notifier))
+		NVT_ERR("Error occurred while unregistering drm_notifier.\n");
 #endif
 #if NVT_TOUCH_MP
 nvt_mp_proc_deinit();
@@ -2201,20 +2244,16 @@ static int nvt_drm_notifier_callback(struct notifier_block *self, unsigned long 
 
 	if (evdata->data && ts) {
 		blank = evdata->data;
-		if (*blank == DRM_BLANK_POWERDOWN) {
-			if (ts->gesture_enabled) {
-				nvt_enable_reg(ts, true);
-				drm_panel_reset_skip_enable(true);
-				/*drm_dsi_ulps_enable(true);*/
-				/*drm_dsi_ulps_suspend_enable(true);*/
-			}
-			nvt_ts_suspend(&ts->client->dev);
-		} else if (*blank == DRM_BLANK_UNBLANK) {
-			if (ts->gesture_enabled) {
-				gpio_direction_output(ts->reset_tddi, 0);
-				msleep(15);
-				gpio_direction_output(ts->reset_tddi, 1);
-				msleep(20);
+		if (event == DRM_EARLY_EVENT_BLANK) {
+			if (*blank == DRM_BLANK_POWERDOWN) {
+				NVT_LOG("event=%lu, *blank=%d\n", event, *blank);
+#if WAKEUP_GESTURE
+				if (ts->gesture_enabled) {
+					nvt_enable_reg(ts, true);
+					drm_panel_reset_skip_enable(true);
+				}
+#endif
+				nvt_ts_suspend(&ts->client->dev);
 			}
 		} else if (event == DRM_EVENT_BLANK) {
 			if (*blank == DRM_BLANK_UNBLANK) {
@@ -2233,34 +2272,6 @@ static int nvt_drm_notifier_callback(struct notifier_block *self, unsigned long 
 
 	return 0;
 }
-static int nvt_pm_suspend(struct device *dev)
-{
-	if (device_may_wakeup(dev) && ts->gesture_enabled) {
-		NVT_LOG("enable touch irq wake\n");
-		enable_irq_wake(ts->client->irq);
-	}
-	ts->dev_pm_suspend = true;
-	reinit_completion(&ts->dev_pm_suspend_completion);
-
-	return 0;
-}
-
-static int nvt_pm_resume(struct device *dev)
-{
-	if (device_may_wakeup(dev) && ts->gesture_enabled) {
-		NVT_LOG("disable touch irq wake\n");
-		disable_irq_wake(ts->client->irq);
-	}
-	ts->dev_pm_suspend = false;
-	complete(&ts->dev_pm_suspend_completion);
-
-	return 0;
-}
-
-static const struct dev_pm_ops nvt_dev_pm_ops = {
-	.suspend = nvt_pm_suspend,
-	.resume = nvt_pm_resume,
-};
 #endif
 
 static const struct i2c_device_id nvt_ts_id[] = {

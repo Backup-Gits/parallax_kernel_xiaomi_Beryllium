@@ -29,11 +29,7 @@
 
 #include <linux/pm_qos.h>
 
-#define PINCTRL_STATE_ACTIVE		"pmx_ts_active"
-#define PINCTRL_STATE_SUSPEND		"pmx_ts_suspend"
-#define PINCTRL_STATE_RELEASE		"pmx_ts_release"
-#define NVT_COORDS_ARR_SIZE 2
-#define NVT_DEBUG 0
+#define NVT_DEBUG 1
 
 //---GPIO number---
 #define NVTTOUCH_RST_PIN 980
@@ -94,6 +90,9 @@ extern const uint16_t gesture_key_array[];
 
 #define NVT_LOCKDOWN_SIZE	8
 
+//---Lockdown---
+#define NVT_LOCKDOWN_SIZE	8
+
 struct nvt_config_info {
 	u8 tp_vendor;
 	u8 tp_color;
@@ -127,6 +126,8 @@ struct nvt_ts_data {
 	int8_t phys[32];
 #if defined(CONFIG_DRM)
 	struct notifier_block notifier;
+#elif defined(CONFIG_HAS_EARLYSUSPEND)
+	struct early_suspend early_suspend;
 #endif
 	uint8_t fw_ver;
 	uint8_t x_num;
@@ -149,6 +150,9 @@ struct nvt_ts_data {
 	bool irq_enabled;
 
 	size_t config_array_size;
+#if WAKEUP_GESTURE
+	int gesture_enabled;
+#endif
 	int current_index;
 	bool dev_pm_suspend;
 	struct completion dev_pm_suspend_completion;
