@@ -56,6 +56,7 @@
 		qcom,mdss-dsi-panel-peak-brightness = <4300000>;
 		qcom,mdss-dsi-panel-blackness-level = <3230>;
 		qcom,dispparam-enabled;
+		qcom,mdss-dsi-panel-dc-threshold = <320>;
 		qcom,mdss-panel-on-dimming-delay = <120>;
 
 		qcom,ulps-enabled;
