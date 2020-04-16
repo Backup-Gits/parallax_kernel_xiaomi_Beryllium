@@ -149,9 +149,6 @@ struct nvt_ts_data {
 	bool irq_enabled;
 
 	size_t config_array_size;
-#if WAKEUP_GESTURE
-	int gesture_enabled;
-#endif
 	int current_index;
 	bool dev_pm_suspend;
 	struct completion dev_pm_suspend_completion;
