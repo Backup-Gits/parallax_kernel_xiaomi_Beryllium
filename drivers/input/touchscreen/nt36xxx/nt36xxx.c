@@ -165,6 +165,8 @@ int32_t CTP_I2C_READ(struct i2c_client *client, uint16_t address, uint8_t *buf, 
 		if (ret == 2)
 			break;
 		retries++;
+		msleep(20);
+		NVT_ERR("error, retry=%d\n", retries);
 	}
 
 	if (unlikely(retries == 5)) {
@@ -205,6 +207,8 @@ int32_t CTP_I2C_WRITE(struct i2c_client *client, uint16_t address, uint8_t *buf,
 		if (ret == 1)
 			break;
 		retries++;
+		msleep(20);
+		NVT_ERR("error, retry=%d\n", retries);
 	}
 
 	if (unlikely(retries == 5)) {
