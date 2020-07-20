@@ -10,13 +10,11 @@ config TOUCHSCREEN_NT36xxx
 
 	  If unsure, say N.
 
-config TOUCHSCREEN_NT36XXX_MPCTRL
-	bool "Novatek NT36xxx MPCTRL"
-	depends on TOUCHSCREEN_NT36XXX
+config TOUCHSCREEN_NT36xxx_MP_CTRLRAM
+	bool "Novatek NT36xxx Multipoint Control RAM"
+	depends on TOUCHSCREEN_NT36xxx
 	default n
 	help
-	  Say Y here to enable NT36xxx MPCTRL, this option intended for
-	  Manufacturer Testing and grabbing RawTouch and checking the
-	  calibration CSV in Pre-Production devices.
+	  Say Y here if you need to use Multipoint Control RAM Testing
 
 	  If unsure, say N.
