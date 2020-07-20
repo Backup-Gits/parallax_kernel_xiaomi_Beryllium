@@ -334,10 +334,6 @@ static int32_t nvt_fw_version_open(struct inode *inode, struct file *file)
 
 	NVT_LOG("++\n");
 
-#if NVT_TOUCH_ESD_PROTECT
-	nvt_esd_check_enable(false);
-#endif /* #if NVT_TOUCH_ESD_PROTECT */
-
 	if (nvt_get_fw_info()) {
 		mutex_unlock(&ts->lock);
 		return -EAGAIN;
@@ -372,10 +368,6 @@ static int32_t nvt_baseline_open(struct inode *inode, struct file *file)
 	}
 
 	NVT_LOG("++\n");
-
-#if NVT_TOUCH_ESD_PROTECT
-	nvt_esd_check_enable(false);
-#endif /* #if NVT_TOUCH_ESD_PROTECT */
 
 	if (nvt_clear_fw_status()) {
 		mutex_unlock(&ts->lock);
@@ -427,10 +419,6 @@ static int32_t nvt_raw_open(struct inode *inode, struct file *file)
 	}
 
 	NVT_LOG("++\n");
-
-#if NVT_TOUCH_ESD_PROTECT
-	nvt_esd_check_enable(false);
-#endif /* #if NVT_TOUCH_ESD_PROTECT */
 
 	if (nvt_clear_fw_status()) {
 		mutex_unlock(&ts->lock);
@@ -485,10 +473,6 @@ static int32_t nvt_diff_open(struct inode *inode, struct file *file)
 	}
 
 	NVT_LOG("++\n");
-
-#if NVT_TOUCH_ESD_PROTECT
-	nvt_esd_check_enable(false);
-#endif /* #if NVT_TOUCH_ESD_PROTECT */
 
 	if (nvt_clear_fw_status()) {
 		mutex_unlock(&ts->lock);
@@ -551,10 +535,6 @@ static int32_t nvt_xiaomi_config_info_open(struct inode *inode, struct file *fil
 	NVT_LOG("set pocket palm switch: %d\n", pocket_palm_switch);
 
 	msleep(35);
-
-#if NVT_TOUCH_ESD_PROTECT
-	nvt_esd_check_enable(false);
-#endif /* #if NVT_TOUCH_ESD_PROTECT */
 
 	/*---set xdata index to EVENT BUF ADDR---*/
 	buf[0] = 0xFF;
@@ -750,10 +730,6 @@ static int32_t nvt_xiaomi_lockdown_info_open(struct inode *inode, struct file *f
 
 	NVT_LOG("++\n");
 
-#if NVT_TOUCH_ESD_PROTECT
-	nvt_esd_check_enable(false);
-#endif /* #if NVT_TOUCH_ESD_PROTECT */
-
 	if (nvt_get_xiaomi_lockdown_info()) {
 		mutex_unlock(&ts->lock);
 		return -EAGAIN;
@@ -791,18 +767,10 @@ static ssize_t nvt_pocket_palm_switch_proc_write(struct file *filp, const char _
 	if (mutex_lock_interruptible(&ts->lock))
 		return -ERESTARTSYS;
 
-#if NVT_TOUCH_ESD_PROTECT
-	nvt_esd_check_enable(false);
-#endif /* #if NVT_TOUCH_ESD_PROTECT */
+	ret = nvt_get_oem_data(data_buf, 0x1E000, 8);
 
-	ret = sscanf(tmp, "%d", &onoff);
-	if (ret != 1) {
-		NVT_ERR("Invalid value!, ret = %d\n", ret);
-		ret = -EINVAL;
-		goto out;
-	}
-	if ((onoff < 0) || (onoff > 1)) {
-		NVT_ERR("Invalid value!, onoff = %d\n", onoff);
+	if (ret < 0) {
+		NVT_ERR("get oem data failed!\n");
 		ret = -EINVAL;
 		goto out;
 	}
