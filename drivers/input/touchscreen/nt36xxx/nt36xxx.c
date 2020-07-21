@@ -576,7 +576,7 @@ static int32_t nvt_flash_open(struct inode *inode, struct file *file)
 {
 	struct nvt_flash_data *dev;
 
-	dev = kmalloc(sizeof(struct nvt_flash_data), GFP_KERNEL);
+	dev = kzalloc(sizeof(struct nvt_flash_data), GFP_KERNEL);
 	if (dev == NULL) {
 		NVT_ERR("Failed to allocate memory for nvt flash data\n");
 		return -ENOMEM;
@@ -1203,14 +1203,12 @@ static void nvt_ts_work_func(void)
 	int32_t i;
 	int32_t finger_cnt;
 
-	mutex_lock(&ts->lock);
+	struct sched_param param = { .sched_priority = MAX_USER_RT_PRIO / 2 };
+	sched_setscheduler(current, SCHED_FIFO, &param);
 
-	if (unlikely(ts->dev_pm_suspend)) {
-		ret = wait_for_completion_timeout(&ts->dev_pm_suspend_completion, msecs_to_jiffies(500));
-		if (!ret) {
-			NVT_ERR("system(i2c) can't finished resuming procedure, skip it\n");
-			goto out;
-		}
+#if WAKEUP_GESTURE
+	if (likely(bTouchIsAwake == 0)) {
+		pm_wakeup_event(&ts->input_dev->dev, 5000);
 	}
 #endif
 
@@ -1221,20 +1219,14 @@ static void nvt_ts_work_func(void)
 		NVT_ERR("CTP_I2C_READ failed.(%d)\n", ret);
 		goto out;
 	}
-/*
-	//--- dump I2C buf ---
-	for (i = 0; i < 10; i++) {
-		printk("%02X %02X %02X %02X %02X %02X  ",
-			point_data[1+i*6], point_data[2+i*6], point_data[3+i*6], point_data[4+i*6], point_data[5+i*6], point_data[6+i*6]);
-	}
-	printk("\n");
-*/
 
 #if WAKEUP_GESTURE
-	if (unlikely(bTouchIsAwake == 0)) {
+	if (likely(bTouchIsAwake == 0)) {
 		input_id = (uint8_t)(point_data[1] >> 3);
 		nvt_ts_wakeup_gesture_report(input_id, point_data);
-		goto out;
+		nvt_irq_enable(true);
+		mutex_unlock(&ts->lock);
+		return IRQ_HANDLED;
 	}
 #endif
 
@@ -1708,7 +1700,7 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
 
 	NVT_LOG("start\n");
 
-	ts = kmem_cache_zalloc(kmem_ts_data_pool, GFP_KERNEL);
+	ts = kzalloc(sizeof(struct nvt_ts_data), GFP_KERNEL);
 	if (ts == NULL) {
 		NVT_ERR("failed to allocated memory for nvt ts data\n");
 		return -ENOMEM;
