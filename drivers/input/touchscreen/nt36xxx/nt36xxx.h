@@ -23,6 +23,7 @@
 #include <linux/i2c.h>
 #include <linux/input.h>
 #include <linux/uaccess.h>
+#include <linux/pm_qos.h>
 
 
 #include <linux/pm_qos.h>
@@ -158,13 +159,7 @@ struct nvt_ts_data {
 	int gesture_enabled;
 #endif
 	int current_index;
-	bool dev_pm_suspend;
-	struct completion dev_pm_suspend_completion;
-	struct work_struct resume_work;
-	struct workqueue_struct *event_wq;
 	struct pm_qos_request pm_qos_req;
-
-	struct proc_dir_entry *input_proc;
 };
 
 #if WAKEUP_GESTURE
