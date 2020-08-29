@@ -35,7 +35,17 @@
 #endif
 
 #include "nt36xxx.h"
+#ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT
+#include <linux/jiffies.h>
+#endif /* ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT */
 
+#ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT
+static struct delayed_work nvt_esd_check_work;
+static struct workqueue_struct *nvt_esd_check_wq;
+static unsigned long irq_timer = 0;
+uint8_t esd_check = false;
+uint8_t esd_retry = 0;
+#endif /* ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT */
 
 #if NVT_TOUCH_EXT_PROC
 extern int32_t nvt_extra_proc_init(void);
@@ -515,6 +525,15 @@ static ssize_t nvt_flash_read(struct file *file, char __user *buff, size_t count
 		NVT_ERR("copy from user error\n");
 		return -EFAULT;
 	}
+
+#ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT
+	/*
+	 * stop esd check work to avoid case that 0x77 report righ after here to enable esd check again
+	 * finally lead to trigger esd recovery bootloader reset
+	 */
+	cancel_delayed_work_sync(&nvt_esd_check_work);
+	nvt_esd_check_enable(false);
+#endif /* ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT */
 
 	i2c_wr = str[0] >> 7;
 
@@ -1061,9 +1080,16 @@ static void nvt_switch_mode_work(struct work_struct *work)
 	}
 }
 
-/*******************************************************
-Description:
-	Xiaomi input events function.
+#ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT
+void nvt_esd_check_enable(uint8_t enable)
+{
+	/* update interrupt timer */
+	irq_timer = jiffies;
+	/* clear esd_retry counter, if protect function is enabled */
+	esd_retry = enable ? 0 : esd_retry;
+	/* enable/disable esd check flag */
+	esd_check = enable;
+}
 
 return:
 	n.a.
@@ -1096,7 +1122,7 @@ static int mi_input_event(struct input_dev *dev, unsigned int type, unsigned int
 
 	return 0;
 }
-#endif
+#endif /* ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT */
 
 #if WAKEUP_GESTURE
 #define EVENT_START				0
@@ -1219,6 +1245,13 @@ static void nvt_ts_work_func(void)
 		goto out;
 	}
 
+	if (nvt_fw_recovery(point_data)) {
+#ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT
+		nvt_esd_check_enable(true);
+#endif /* ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT */
+		goto XFER_ERROR;
+	}
+
 #if WAKEUP_GESTURE
 	if (likely(bTouchIsAwake == 0)) {
 		input_id = (uint8_t)(point_data[1] >> 3);
@@ -1236,25 +1269,13 @@ static void nvt_ts_work_func(void)
 		if ((input_id == 0) || (input_id > ts->max_touch_num))
 			continue;
 
-		if (((point_data[position] & 0x07) == 0x01) || ((point_data[position] & 0x07) == 0x02)) {	/*finger down (enter & moving)*/
-			input_x = (uint32_t)(point_data[position + 1] << 4) + (uint32_t) (point_data[position + 3] >> 4);
-			input_y = (uint32_t)(point_data[position + 2] << 4) + (uint32_t) (point_data[position + 3] & 0x0F);
-			if ((input_x < 0) || (input_y < 0))
-				continue;
-			if ((input_x > ts->abs_x_max) || (input_y > ts->abs_y_max))
-				continue;
-			input_w = (uint32_t)(point_data[position + 4]);
-			if (input_w == 0)
-				input_w = 1;
-			if (i < 2) {
-				input_p = (uint32_t)(point_data[position + 5]) + (uint32_t)(point_data[i + 63] << 8);
-				if (input_p > TOUCH_FORCE_NUM)
-					input_p = TOUCH_FORCE_NUM;
-			} else {
-				input_p = (uint32_t)(point_data[position + 5]);
-			}
-			if (input_p == 0)
-				input_p = 1;
+		if (likely(((point_data[position] & 0x07) == 0x01) || ((point_data[position] & 0x07) == 0x02))) {	//finger down (enter & moving)
+#ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT
+			/* update interrupt timer */
+			irq_timer = jiffies;
+#endif /* ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT */
+			input_x = (uint32_t) (point_data[position + 1] << 4) + (uint32_t) (point_data[position + 3] >> 4);
+			input_y = (uint32_t) (point_data[position + 2] << 4) + (uint32_t) (point_data[position + 3] & 0x0F);
 
 #if MT_PROTOCOL_B
 			press_id[input_id - 1] = 1;
@@ -1299,10 +1320,13 @@ static void nvt_ts_work_func(void)
 
 #if TOUCH_KEY_NUM > 0
 	if (point_data[61] == 0xF8) {
-		for (i = 0; i < ts->max_button_num; i++)
-			input_report_key(
-				ts->input_dev, touch_key_array[i],
-				((point_data[62] >> i) & 0x01));
+#ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT
+		/* update interrupt timer */
+		irq_timer = jiffies;
+#endif /* ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT */
+		for (i = 0; i < ts->max_button_num; i++) {
+			input_report_key(ts->input_dev, touch_key_array[i], ((point_data[62] >> i) & 0x01));
+		}
 	} else {
 		for (i = 0; i < ts->max_button_num; i++)
 			input_report_key(ts->input_dev, touch_key_array[i], 0);
@@ -1886,7 +1910,19 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
 	queue_delayed_work(nvt_fwu_wq, &ts->nvt_fwu_work, msecs_to_jiffies(14000));
 #endif
 
-	/*---set device node---*/
+#ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT
+	INIT_DELAYED_WORK(&nvt_esd_check_work, nvt_esd_check_func);
+	nvt_esd_check_wq = alloc_workqueue("nvt_esd_check_wq", WQ_MEM_RECLAIM, 1);
+	if (!nvt_esd_check_wq) {
+		NVT_ERR("nvt_esd_check_wq create workqueue failed\n");
+		ret = -ENOMEM;
+		goto err_create_nvt_esd_check_wq_failed;
+	}
+	queue_delayed_work(nvt_esd_check_wq, &nvt_esd_check_work,
+			msecs_to_jiffies(NVT_TOUCH_ESD_CHECK_PERIOD));
+#endif /* ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT */
+
+	//---set device node---
 #if NVT_TOUCH_PROC
 	ret = nvt_flash_proc_init();
 	if (ret != 0) {
@@ -1944,8 +1980,14 @@ err_extra_proc_init_failed:
 nvt_flash_proc_deinit();
 err_flash_proc_init_failed:
 #endif
-	pm_qos_remove_request(&ts->pm_qos_req);
-	free_irq(client->irq, ts);
+#ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT
+	if (nvt_esd_check_wq) {
+		cancel_delayed_work_sync(&nvt_esd_check_work);
+		destroy_workqueue(nvt_esd_check_wq);
+		nvt_esd_check_wq = NULL;
+	}
+err_create_nvt_esd_check_wq_failed:
+#endif
 #if BOOT_UPDATE_FIRMWARE
 	if (nvt_fwu_wq) {
 		cancel_delayed_work_sync(&ts->nvt_fwu_work);
@@ -2006,6 +2048,15 @@ static int32_t nvt_ts_remove(struct i2c_client *client)
 	nvt_flash_proc_deinit();
 #endif
 
+#ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT
+	if (nvt_esd_check_wq) {
+		cancel_delayed_work_sync(&nvt_esd_check_work);
+		nvt_esd_check_enable(false);
+		destroy_workqueue(nvt_esd_check_wq);
+		nvt_esd_check_wq = NULL;
+	}
+#endif
+
 #if BOOT_UPDATE_FIRMWARE
 	if (nvt_fwu_wq) {
 		cancel_delayed_work_sync(&ts->nvt_fwu_work);
@@ -2063,6 +2114,15 @@ static void nvt_ts_shutdown(struct i2c_client *client)
 	nvt_flash_proc_deinit();
 #endif
 
+#ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT
+	if (nvt_esd_check_wq) {
+		cancel_delayed_work_sync(&nvt_esd_check_work);
+		nvt_esd_check_enable(false);
+		destroy_workqueue(nvt_esd_check_wq);
+		nvt_esd_check_wq = NULL;
+	}
+#endif /* ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT */
+
 #if BOOT_UPDATE_FIRMWARE
 	if (nvt_fwu_wq) {
 		cancel_delayed_work_sync(&ts->nvt_fwu_work);
@@ -2098,6 +2158,12 @@ static int32_t nvt_ts_suspend(struct device *dev)
 #if !WAKEUP_GESTURE
 	nvt_irq_enable(false);
 #endif
+
+#ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT
+	NVT_LOG("cancel delayed work sync\n");
+	cancel_delayed_work_sync(&nvt_esd_check_work);
+	nvt_esd_check_enable(false);
+#endif /* ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT */
 
 	mutex_lock(&ts->lock);
 
@@ -2201,6 +2267,13 @@ static int32_t nvt_ts_resume(struct device *dev)
 	} else {
 		NVT_ERR("Failed to init pinctrl\n");
 	}
+#endif
+
+#ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT
+	nvt_esd_check_enable(false);
+	queue_delayed_work(nvt_esd_check_wq, &nvt_esd_check_work,
+			msecs_to_jiffies(NVT_TOUCH_ESD_CHECK_PERIOD));
+#endif /* ifdef CONFIG_TOUCHSCREEN_NT36xxx_ESD_PROTECT */
 
 	bTouchIsAwake = 1;
 
