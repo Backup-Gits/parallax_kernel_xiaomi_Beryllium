@@ -1,15 +1,12 @@
-#!/bin/bash
 
-#set -e
-
-## Copy this script inside the kernel directory
 KERNEL_DEFCONFIG=beryllium_defconfig
 ANYKERNEL3_DIR=$PWD/AnyKernel3/
-FINAL_KERNEL_ZIP=Optimus_Drunk_Beryllium_v10.40.zip
-export PATH="$KERNELDIR/prebuilts/proton-clang/bin:${PATH}"
+KERNELDIR=$PWD/
+FINAL_KERNEL_ZIP=DuskMane_v1.0.zip
+export PATH="${PWD}/clang/bin:${PATH}"
 export ARCH=arm64
 export SUBARCH=arm64
-export KBUILD_COMPILER_STRING="$($KERNELDIR/prebuilts/proton-clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
+export KBUILD_COMPILER_STRING="$(${PWD}/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
 # Speed up build process
 MAKE="./makeparallel"
 
@@ -22,7 +19,8 @@ nocol='\033[0m'
 
 # Clean build always lol
 echo "**** Cleaning ****"
-mkdir -p out
+rm -r out
+mkdir out
 make O=out clean
 
 echo "**** Kernel defconfig is set to $KERNEL_DEFCONFIG ****"
@@ -40,18 +38,21 @@ make -j$(nproc --all) O=out \
                       OBJDUMP=llvm-objdump \
                       STRIP=llvm-strip
 
-echo "**** Verify Image.gz-dtb ****"
+echo "**** Verify Image.gz-dtb & dtbo.img ****"
 ls $PWD/out/arch/arm64/boot/Image.gz-dtb
+ls $PWD/out/arch/arm64/boot/dtbo.img
 
-#Anykernel 2 time!!
+# Anykernel 3 time!!
 echo "**** Verifying AnyKernel3 Directory ****"
 ls $ANYKERNEL3_DIR
 echo "**** Removing leftovers ****"
 rm -rf $ANYKERNEL3_DIR/Image.gz-dtb
+rm -rf $ANYKERNEL3_DIR/dtbo.img
 rm -rf $ANYKERNEL3_DIR/$FINAL_KERNEL_ZIP
 
-echo "**** Copying Image.gz-dtb ****"
+echo "**** Copying Image.gz-dtb & dtbo.img ****"
 cp $PWD/out/arch/arm64/boot/Image.gz-dtb $ANYKERNEL3_DIR/
+cp $PWD/out/arch/arm64/boot/dtbo.img $ANYKERNEL3_DIR/
 
 echo "**** Time to zip up! ****"
 cd $ANYKERNEL3_DIR/
@@ -62,7 +63,8 @@ echo "**** Done, here is your sha1 ****"
 cd ..
 rm -rf $ANYKERNEL3_DIR/$FINAL_KERNEL_ZIP
 rm -rf $ANYKERNEL3_DIR/Image.gz-dtb
-rm -rf out/
+rm -rf $ANYKERNEL3_DIR/dtbo.img
+#rm -rf out/
 
 BUILD_END=$(date +"%s")
 DIFF=$(($BUILD_END - $BUILD_START))
