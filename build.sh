@@ -1,8 +1,23 @@
+clear
+
+if [ -r clang ]; then
+  echo clang found! check for update...
+  cd clang
+  git config pull.rebase false
+  git pull
+  cd ..
+
+else
+  echo clang not found!, git cloning it now....
+  git clone https://github.com/kdrag0n/proton-clang.git clang
+
+fi
+
 
 KERNEL_DEFCONFIG=beryllium_defconfig
 ANYKERNEL3_DIR=$PWD/AnyKernel3/
 KERNELDIR=$PWD/
-FINAL_KERNEL_ZIP=DuskMane_v1.0.zip
+FINAL_KERNEL_ZIP=parallax_v1.0.zip
 export PATH="${PWD}/clang/bin:${PATH}"
 export ARCH=arm64
 export SUBARCH=arm64
