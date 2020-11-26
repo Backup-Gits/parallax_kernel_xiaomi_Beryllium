@@ -1,4 +1,5 @@
 clear
+make clean && make distclean && make mrproper
 
 if [ -r clang ]; then
   echo clang found! check for update...
@@ -14,7 +15,7 @@ else
 fi
 
 
-KERNEL_DEFCONFIG=beryllium_defconfig
+KERNEL_DEFCONFIG=parallax_defconfig
 ANYKERNEL3_DIR=$PWD/AnyKernel3/
 KERNELDIR=$PWD/
 FINAL_KERNEL_ZIP=parallax_v1.0.zip
