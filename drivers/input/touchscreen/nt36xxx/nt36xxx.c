@@ -950,7 +950,7 @@ static irqreturn_t nvt_ts_work_func(int irq, void *data)
 #if NVT_TOUCH_ESD_PROTECT
 		nvt_esd_check_enable(true);
 #endif /* #if NVT_TOUCH_ESD_PROTECT */
-		goto XFER_ERROR;
+		goto out;
 	}
 
 #if WAKEUP_GESTURE
@@ -1053,8 +1053,7 @@ static irqreturn_t nvt_ts_work_func(int irq, void *data)
 
 	input_sync(ts->input_dev);
 
-XFER_ERROR:
-
+out:
 	mutex_unlock(&ts->lock);
 
 	return IRQ_HANDLED;
