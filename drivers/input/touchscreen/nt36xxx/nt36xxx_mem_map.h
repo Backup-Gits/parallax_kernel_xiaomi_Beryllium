@@ -169,7 +169,6 @@ struct nvt_ts_trim_id_table {
 	uint8_t mask[NVT_ID_BYTE_MAX];
 	const struct nvt_ts_mem_map *mmap;
 	const struct nvt_ts_hw_info *hwinfo;
-	uint8_t carrier_system;
 };
 
 static const struct nvt_ts_trim_id_table trim_id_table[] = {
