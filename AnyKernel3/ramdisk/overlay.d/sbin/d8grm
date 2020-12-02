@@ -1,0 +1,264 @@
+#!/system/bin/sh 
+#
+# D8G Remover
+MODDIR=${0%/*}
+
+# Folder init
+sdcard=/data/media/0
+D8G_DIR=$sdcard/d8g
+MD=/data/adb/modules
+D8G_RMD=$MD/d8g_rm/v
+#d8g init old
+D8G_INIT=/sbin
+#d8g init new
+D8G_INIT_NEW=/vendor/etc
+vk=`uname -r`;
+vs=`cat $D8G_RMD`;
+
+sleep 5
+
+if [ -f $D8G_DIR/d8g-rm.log ]; then
+	rm -f $D8G_DIR/d8g-rm.log
+fi
+if [ -f $D8G_DIR/rm.log ]; then
+	rm -f $D8G_DIR/rm.log
+fi
+
+NEW(){
+
+if [ -d $D8G_INIT_NEW/d8g ]; then
+	rm -fr $D8G_INIT_NEW/d8g
+fi
+if [ -f $D8G_INIT_NEW/init/init.d8g.rc ]; then
+	rm -fr $D8G_INIT_NEW/init/init.d8g.rc
+fi
+if [ -f $D8G_INIT_NEW/init/init.dc.rc ]; then
+	rm -fr $D8G_INIT_NEW/init/init.dc.rc
+fi
+if [ -f $D8G_INIT_NEW/init/init.pubg.rc ]; then
+	rm -fr $D8G_INIT_NEW/init/init.pubg.rc
+fi
+if [ -f $D8G_INIT_NEW/init/init.spectrum.rc ]; then
+	rm -fr $D8G_INIT_NEW/init/init.spectrum.rc
+fi
+
+}
+
+if [ "$vs" = "$vk" ]; then
+	echo "Your Kernel Installed :" >> $D8G_DIR/rm.log
+	uname -r >> $D8G_DIR/rm.log
+	echo "" >> $D8G_DIR/rm.log
+	echo "Clean Junk from Other Kernel" >> $D8G_DIR/rm.log
+	if [ -f $D8G_INIT/sh ]; then
+		rm -f $D8G_INIT/sh
+	fi
+	if [ -f $D8G_INIT/init.special_power.sh ]; then
+		rm -f $D8G_INIT/init.special_power.sh
+	fi
+	if [ -f $D8G_INIT/init.spectrum.sh ]; then
+		rm -f $D8G_INIT/init.spectrum.sh
+	fi
+	if [ -f $D8G_INITprofile.balance.sh ]; then
+		rm -f $D8G_INIT/profile.balance.sh
+	fi
+	if [ -f $D8G_INIT/profile.Lbalance.sh ]; then
+		rm -f $D8G_INIT/profile.Lbalance.sh
+	fi
+	if [ -f $D8G_INIT/profile.Hbalance.sh ]; then
+		rm -f $D8G_INIT/profile.Hbalance.sh
+	fi
+	if [ -f $D8G_INIT/profile.battery.sh ]; then
+		rm -f $D8G_INIT/profile.battery.sh
+	fi
+	if [ -f $D8G_INIT/profile.gaming.sh ]; then
+		rm -f $D8G_INIT/profile.gaming.sh
+	fi
+	if [ -f $D8G_INIT/profile.performance.sh ]; then
+		rm -f $D8G_INIT/profile.performance.sh
+	fi
+	if [ -f $D8G_INIT/init.supolicy.sh ]; then
+		rm -f $D8G_INIT/init.supolicy.sh
+	fi
+	if [ -f $D8G_INIT/init.LawRun.sh ]; then
+		rm -f $D8G_INIT/init.LawRun.sh
+	fi
+	if [ -f $D8G_INIT/profile.LawRun.sh ]; then
+		rm -f $D8G_INIT/profile.LawRun.sh
+	fi
+	if [ -f $D8G_INIT/p.balance ]; then
+		rm -f $D8G_INIT/p.balance
+	fi
+	if [ -f $D8G_INIT/p.battery ]; then
+		rm -f $D8G_INIT/p.battery
+	fi
+	if [ -f $D8G_INIT/p.ubattery ]; then
+		rm -f $D8G_INIT/p.battery
+	fi
+	if [ -f $D8G_INIT/p.gaming ]; then
+		rm -f $D8G_INIT/p.gaming
+	fi
+	if [ -f $D8G_INIT/p.performance ]; then
+		rm -f $D8G_INIT/p.performance
+	fi
+	if [ -f $D8G_INIT/spa ]; then
+		rm -f $D8G_INIT/spa
+	fi
+	if [ -f $D8G_INIT/profile.Init.sh ]; then
+		rm -f $D8G_INIT/profile.Init.sh
+	fi
+	if [ -d /data/media/0/LawRun-Kernel ]; then
+		rm -fr /data/media/0/LawRun-Kernel
+	fi
+	echo "" >> $D8G_DIR/rm.log
+	echo "Finish!!" >> $D8G_DIR/rm.log
+else
+	if [ -f $D8G_DIR/d8g.log ]; then
+		rm -f $D8G_DIR/d8g.log
+	fi
+	echo "" >> $D8G_DIR/rm.log
+	echo "Kernel Installed :" >> $D8G_DIR/rm.log
+	echo "--------------------------" >> $D8G_DIR/rm.log
+	echo "$vk" >> $D8G_DIR/rm.log
+	echo "-------------------------" >> $D8G_DIR/rm.log
+	echo "" >> $D8G_DIR/rm.log
+	echo "This config only for :" >> $D8G_DIR/rm.log
+	echo "--------------------------" >> $D8G_DIR/rm.log
+	echo "$vs" >> $D8G_DIR/rm.log
+	echo "" >> $D8G_DIR/rm.log
+	echo "-------------------------" >> $D8G_DIR/rm.log
+	echo "Removing Config" >> $D8G_DIR/rm.log
+	echo "-------------------------" >> $D8G_DIR/rm.log
+	if [ -f $D8G_INIT/bp ]; then
+		rm -f $D8G_INIT/bp
+	fi
+	if [ -f $D8G_INIT/dc ]; then
+		rm -f $D8G_INIT/dc
+	fi
+	if [ -f $D8G_INIT/dkm ]; then
+		rm -f $D8G_INIT/dkm
+	fi
+	if [ -f $D8G_INIT/te ]; then
+		rm -f $D8G_INIT/te
+	fi
+	if [ -f $D8G_INIT/teb ]; then
+		rm -f $D8G_INIT/teb
+	fi
+	if [ -f $D8G_INIT/tebp ]; then
+		rm -f $D8G_INIT/tebp
+	fi
+	if [ -f $D8G_INIT/wcnss ]; then
+		rm -f $D8G_INIT/wcnss
+	fi
+	if [ -f $D8G_INIT/tec ]; then
+		rm -f $D8G_INIT/tec
+	fi
+	if [ -f $D8G_INIT/tecb ]; then
+		rm -f $D8G_INIT/tecb
+	fi
+	if [ -f $D8G_INIT/pubg ]; then
+		rm -f $D8G_INIT/pubg
+	fi
+	if [ -f $D8G_INIT/d8gp ]; then
+		rm -f $D8G_INIT/d8gp
+	fi
+	if [ -f $D8G_INIT/d8grm ]; then
+		rm -f $D8G_INIT/d8grm
+	fi
+	if [ -f $D8G_INIT/GS ]; then
+		rm -f $D8G_INIT/GS
+	fi
+	if [ -f $D8G_INIT/p.balance ]; then
+		rm -f $D8G_INIT/p.balance
+	fi
+	if [ -f $D8G_INIT/p.battery ]; then
+		rm -f $D8G_INIT/p.battery
+	fi
+	if [ -f $D8G_INIT/p.gaming ]; then
+		rm -f $D8G_INIT/p.gaming
+	fi
+	if [ -f $D8G_INIT/p.performance ]; then
+		rm -f $D8G_INIT/p.performance
+	fi
+	if [ -f $D8G_INIT/spa ]; then
+		rm -f $D8G_INIT/spa
+	fi
+	if [ -f /system/etc/init/balance-thermal ]; then
+		rm -f /system/etc/init/balance-thermal.rc
+	fi
+	if [ -d /system/product/app/dkm ]; then
+		rm -rf /system/product/app/dkm
+	fi
+	if [ ! -d data/app/com.diphons.dkm* ]; then
+		echo "Removing D8G Kernel Manager" >> $D8G_DIR/rm.log
+		rm -fr data/app/com.diphons.dkm*
+	fi
+	if [ -d $MD/d8g_thermal ]; then
+		echo "Removing D8G Thermal" >> $D8G_DIR/rm.log
+		rm -fr $MD/d8g_thermal
+	fi
+	if [ -d $MD/d8g_thermal_balance ]; then
+		echo "Removing Balance Thermal" >> $D8G_DIR/rm.log
+		rm -fr $MD/d8g_thermal_balance
+	fi
+	if [ -d $MD/d8g_bootpatch ]; then
+		echo "Removing D8G Boot Patch" >> $D8G_DIR/rm.log
+		rm -fr $MD/d8g_bootpatch
+	fi
+	if [ -d $MD/d8g_amoled ]; then
+		echo "Removing D8G Amoled Color" >> $D8G_DIR/rm.log
+		rm -fr $MD/d8g_amoled
+	fi
+	if [ -d $MD/d8g_touchi ]; then
+		echo "Removing TouchX" >> $D8G_DIR/rm.log
+		rm -fr $MD/d8g_touchi
+	fi
+	if [ -f $D8G_INIT/d8ginit ]; then
+		echo "Removing D8G Init" >> $D8G_DIR/rm.log
+		rm -f $D8G_INIT/d8ginit
+	fi
+	if [ -f $D8G_INIT/pubgsav ]; then
+		rm -f $D8G_INIT/pubgsav
+	fi
+	if [ -f $D8G_DIR/rm_bp ]; then
+		rm -f $D8G_DIR/rm_bp
+	fi
+	if [ -f $D8G_DIR/rm_tm ]; then
+		rm -f $D8G_DIR/rm_tm
+	fi
+	if [ -f $D8G_DIR/rm_ac ]; then
+		rm -f $D8G_DIR/rm_ac
+	fi
+	if [ -f $D8G_DIR/rm_ti ]; then
+		rm -f $D8G_DIR/rm_ti
+	fi
+	if [ -f $D8G_DIR/pubg/dp ]; then
+		rm -f $D8G_DIR/pubg/dp
+	fi
+	if [ -f $D8G_DIR/pubg/pubgservice ]; then
+		rm -f $D8G_DIR/pubg/pubgservice
+	fi
+	if [ -f $D8G_DIR/pubg/pb ]; then
+		rm -f $D8G_DIR/pubg/pb
+	fi
+	if [ -f $D8G_DIR/pubg/phdre ]; then
+		rm -f $D8G_DIR/pubg/phdre
+	fi
+	if [ -f $D8G_DIR/pubg/ro ]; then
+		rm -f $D8G_DIR/pubg/ro
+	fi
+	if [ -f $D8G_DIR/crp ]; then
+		rm -f $D8G_DIR/crp
+	fi
+	if [ -d $D8G_DIR/pubg/ori ]; then
+		rm -fr $D8G_DIR/pubg/ori
+	NEW
+	if [ -d $MD/d8g_rm ]; then
+		echo "Removing D8G Remover" >> $D8G_DIR/rm.log
+		echo "" >> $D8G_DIR/rm.log
+		echo "Finish!!" >> $D8G_DIR/rm.log
+		rm -fr $MD/d8g_rm
+	fi
+fi
+
+
+

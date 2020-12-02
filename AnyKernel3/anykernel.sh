@@ -19,25 +19,25 @@ supported.versions=
 
 # shell variables
 block=/dev/block/bootdevice/by-name/boot;
-is_slot_device=auto;
+is_slot_device=0;
 ramdisk_compression=auto;
-
 
 ## AnyKernel methods (DO NOT CHANGE)
 # import patching functions/variables - see for reference
 . tools/ak3-core.sh;
 
-
 ## AnyKernel file attributes
 # set permissions/ownership for included ramdisk files
 set_perm_recursive 0 0 750 750 $ramdisk/*;
-
 
 ## AnyKernel install
 dump_boot;
 
 # Begin Ramdisk Changes
-. /tmp/anykernel/tools/fstab.sh;
+. /tmp/anykernel/tools/install.sh;
+
+# Selinux Permissive
+#patch_cmdline androidboot.selinux androidboot.selinux=permissive
 
 # migrate from /overlay to /overlay.d to enable SAR Magisk
 if [ -d $ramdisk/overlay ]; then
@@ -46,4 +46,3 @@ fi;
 
 write_boot;
 ## end install
-

@@ -1,0 +1,28 @@
+# PERFORMANCE KERNEL MANAGER
+# Ramdisk file for profile based kernel management
+# Implimentation inspired by Franco's fku profiles
+
+# Balance (default profile)
+on property:persist.performance.profile=0
+   exec u:r:magisk:s0 root root -- /sbin/d8gp balance
+   exec u:r:magisk:s0 root root -- /vendor/etc/d8g/d8gp balance
+
+# Performance
+on property:persist.performance.profile=1
+   exec u:r:magisk:s0 root root -- /sbin/d8gp performance
+   exec u:r:magisk:s0 root root -- /vendor/etc/d8g/d8gp performance
+
+# Battery
+on property:persist.performance.profile=2
+   exec u:r:magisk:s0 root root -- /sbin/d8gp battery
+   exec u:r:magisk:s0 root root -- /vendor/etc/d8g/d8gp battery
+
+# Gaming
+on property:persist.performance.profile=3
+   exec u:r:magisk:s0 root root -- /sbin/d8gp game
+   exec u:r:magisk:s0 root root -- /vendor/etc/d8g/d8gp game
+
+# Gaming Plus
+on property:persist.performance.profile=4
+   exec u:r:magisk:s0 root root -- /sbin/d8gp gameplus
+   exec u:r:magisk:s0 root root -- /vendor/etc/d8g/d8gp gameplus

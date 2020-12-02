@@ -1,0 +1,56 @@
+#!/system/bin/sh 
+#
+# D8G Charger Max
+
+#D8G DIR
+D8G_DIR=/data/media/0/d8g
+cm=`getprop persist.charger.profile`;
+
+rvalue() {
+if [ -f $D8G_DIR/charger ]; then
+	rm -f $D8G_DIR/charger
+fi
+}
+
+chmod 666 /sys/class/power_supply/battery/constant_charge_current_max
+
+if [ "$cm" = "1" ]; then
+	echo "3000000" > /sys/class/power_supply/battery/constant_charge_current_max
+	rvalue()
+	echo "1" >> $D8G_DIR/charger
+else
+	if [ "$cm" = "2" ]; then
+		echo "3300000" > /sys/class/power_supply/battery/constant_charge_current_max
+		rvalue()
+		echo "2" >> $D8G_DIR/charger
+	else
+		if [ "$cm" = "3" ]; then
+			echo "1200000" > /sys/class/power_supply/battery/constant_charge_current_max
+			if [ ! -f $D8G_DIR/charger ]; then
+				echo "0" >> $D8G_DIR/charger
+			fi
+		else
+			if [ "$cm" = "4" ]; then
+				echo "1800000" > /sys/class/power_supply/battery/constant_charge_current_max
+				rvalue()
+				echo "4" >> $D8G_DIR/charger
+			else
+				echo "2800000" > /sys/class/power_supply/battery/constant_charge_current_max
+				rvalue()
+				echo "0" >> $D8G_DIR/charger
+			fi
+		fi
+	fi
+fi
+
+chmod 444 /sys/class/power_supply/battery/constant_charge_current_max
+# echo "Y" > /sys/module/qpnp_fg_gen3/parameters/charge_boost_enabled
+
+#vcm=`cat /sys/class/power_supply/battery/constant_charge_current_max`;
+
+#echo "D8G Kernel" >> $D8G_DIR/charger
+#echo "--------------------------" >> $D8G_DIR/charger
+#echo "" >> $D8G_DIR/charger
+#echo "Charger Setted : $vcm" >> $D8G_DIR/charger
+#echo "" >> $D8G_DIR/charger
+#echo "--------------------------" >> $D8G_DIR/charger

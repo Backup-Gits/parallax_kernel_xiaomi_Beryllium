@@ -1,0 +1,54 @@
+#!/system/bin/sh
+# Please don't hardcode /magisk/modname/... ; instead, please use $MODDIR/...
+# This will make your scripts compatible even if Magisk change its mount point in the future
+MODDIR=${0%/*}
+
+# This script will be executed in post-fs-data mode
+# More info in the main Magisk thread
+
+# d8g boot
+D8G_BOOT=/data/media/0/d8g/boot
+bp=$MODDIR/system/media
+bpa=$MODDIR/system/media/theme/cust_config/global/bootanimation.zip
+bpm=$D8G_BOOT/bootanimation.zip
+bpaosp=$MODDIR/system/media/bootanimation.zip
+bpaospdrk=$MODDIR/system/media/bootanimation_dark.zip
+bpproduct=$MODDIR/system/product/media/bootanimation.zip
+bpproductdrk=$MODDIR/system/product/media/bootanimation_dark.zip
+bpproductdrk2=$MODDIR/system/product/media/bootanimation-dark.zip
+cbs=$MODDIR/system/media/theme/cust_config
+cbsaosp=$MODDIR/system/media
+cbsproduct=$MODDIR/system/product/media
+
+if [ ! -d $cbs ]; then
+	if [ ! -d $cbsaosp ]; then
+		if [ -d $cbsproduct ]; then
+			if [ -f $bpproduct ]; then
+				rm -f $bpproduct
+				rm -f $bpproductdrk
+				rm -f $bpproductdrk2
+			fi
+			if [ -f $bpm ]; then
+				cp $bpm $bpproduct
+				cp $bpm $bpproductdrk
+				cp $bpm $bpproductdrk2
+			fi
+		fi
+	else
+		if [ -f $bpaosp ]; then
+			rm -f $bpaosp
+			rm -f $bpaospdrk
+		fi
+		if [ -f $bpm ]; then
+			cp $bpm $bpaosp
+			cp $bpm $bpaospdrk
+		fi
+	fi
+else
+	if [ -f $bpa ]; then
+		rm -f $bpa
+	fi
+	if [ -f $bpm ]; then
+		cp $bpm $bpa
+	fi
+fi

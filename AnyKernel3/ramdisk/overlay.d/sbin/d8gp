@@ -1,0 +1,1013 @@
+#!/system/bin/sh 
+#
+# D8G Profile
+
+# Set first parameter to profile
+profile=$1
+
+#D8G DIR
+D8G_DIR=/data/media/0/d8g
+D8G_PROFILE=$D8G_DIR/profiles/user
+D8G_PAS=$D8G_DIR/profiles/pas
+GM_DIR=$D8G_DIR/gm
+
+# ROM Verison
+crom=/system/priv-app/MiuiSystemUI
+if [ -d $crom ]; then
+	cromv="MIUI"
+else
+	cromv="AOSP"
+fi
+
+if [ ! -d $GM_DIR ]; then
+	mkdir -p $GM_DIR
+fi
+if [ ! -f $GM_DIR/gm ]; then
+	echo "0" >> $GM_DIR/gm
+fi
+if [ ! -f $GM_DIR/cog ]; then
+	echo "0" >> $GM_DIR/cog
+fi
+if [ -d $crom ]; then
+	if [ -f $GM_DIR/hdu ]; then
+		rm -f $GM_DIR/hdu;
+	fi
+else
+	if [ ! -f $GM_DIR/hdu ]; then
+		echo "0" >> $GM_DIR/hdu
+	fi
+fi
+if [ ! -f $GM_DIR/ab ]; then
+	echo "0" >> $GM_DIR/ab
+fi
+if [ ! -f $GM_DIR/ims ]; then
+	echo "0" >> $GM_DIR/ims
+fi
+if [ ! -f $GM_DIR/pag ]; then
+	echo "0" >> $GM_DIR/pag
+fi
+if [ ! -f $GM_DIR/gto ]; then
+	echo "0" >> $GM_DIR/gto
+fi
+if [ ! -f $GM_DIR/sog ]; then
+	echo "0" >> $GM_DIR/sog
+fi
+#if [ ! -f $GM_DIR/sps ]; then
+#	echo "0" >> $GM_DIR/sps
+#fi
+if [ ! -f $GM_DIR/fbg ]; then
+	echo "0" >> $GM_DIR/fbg
+fi
+
+sps=/sys/devices/system/cpu/sched_mc_power_savings
+spsv=`cat $sps`;
+#blp01=/sys/devices/platform/soc/ae00000.qcom,mdss_mdp/backlight/panel0-backlight/brightness
+#blp02=/sys/class/leds/wled/brightness
+
+if [ ! -f $GM_DIR/abstat ]; then
+	#rm -f $GM_DIR/abstat;
+	settings get system screen_brightness_mode >> $GM_DIR/abstat
+fi
+if [ ! -f $GM_DIR/bvstat ]; then
+	settings get system screen_brightness >> $GM_DIR/bvstat
+fi
+#settings get system screen_brightness >> $GM_DIR/bgv
+
+if [ -f $GM_DIR/bv ]; then
+	rm -f $GM_DIR/bv;
+fi
+settings get system screen_brightness >> $GM_DIR/bv
+
+#if [ ! -f $GM_DIR/spsstat ]; then
+#	echo $spsv >> $GM_DIR/spsstat
+#fi
+
+bv=`cat $GM_DIR/bv`;
+bvstat=`cat $GM_DIR/bvstat`;
+gmo=`cat $GM_DIR/gm`;
+cog=`cat $GM_DIR/cog`;
+gm_hup=`cat $GM_DIR/hdu`;
+gm_ab=`cat $GM_DIR/ab`;
+gm_abstat=`cat $GM_DIR/abstat`;
+gm_imm=`cat $GM_DIR/ims`;
+pag=`cat $GM_DIR/pag`;
+gto=`cat $GM_DIR/gto`;
+#gm_sps=`cat $GM_DIR/sps`;
+#gm_spsstat=`cat $GM_DIR/spsstat`;
+gm_fbg=`cat $GM_DIR/fbg`;
+gm_sog=`cat $GM_DIR/sog`;
+gm=0
+
+cv=`getprop persist.charger.profile`;
+if [ "$cv" = "1" ]; then
+	cv=1
+else
+	if [ "$cv" = "2" ]; then
+		cv=2
+	else
+		if [ "$cv" = "4" ]; then
+			cv=4
+		else
+			cv=0
+		fi
+	fi
+fi
+
+if [ -f $D8G_DIR/profile.new ]; then
+	cp $D8G_DIR/profile.new $D8G_DIR/profiles/profile.new
+	rm -f $D8G_DIR/profile.new
+fi
+if [ ! -f $D8G_DIR/profiles/profile.new ]; then
+	echo "0" >> $D8G_DIR/profiles/profile.new
+fi
+new_profile=`cat $D8G_DIR/profiles/profile.new`;
+#
+# Profile :
+# Old = 0 (V3.3 and Old Versin)
+# New = 1 (V3.5)
+
+#read max cpu
+maxfreqcpu() {
+maxcpu=`cat /sys/devices/system/cpu/cpufreq/policy4/scaling_boost_frequencies`;
+if [ $maxcpu =  2956800 ]; then
+	echo "2956800" > /sys/devices/system/cpu/cpu4/cpufreq/scaling_max_freq
+else
+	echo "2803200" > /sys/devices/system/cpu/cpu4/cpufreq/scaling_max_freq
+fi
+
+}
+
+# Adds
+deadline() {
+# IO Scheduler
+echo "deadline" > /sys/block/sda/queue/scheduler
+echo "deadline" > /sys/block/sdb/queue/scheduler
+echo "deadline" > /sys/block/sdc/queue/scheduler
+echo "deadline" > /sys/block/sdd/queue/scheduler
+echo "deadline" > /sys/block/sde/queue/scheduler
+echo "deadline" > /sys/block/sdf/queue/scheduler
+
+#Unlock FPS =-60 // to set as stock fps set to 1
+#setprop debug.egl.swapinterval -60
+}
+
+maple() {
+# IO Scheduler
+echo "maple" > /sys/block/sda/queue/scheduler
+echo "maple" > /sys/block/sdb/queue/scheduler
+echo "maple" > /sys/block/sdc/queue/scheduler
+echo "maple" > /sys/block/sdd/queue/scheduler
+echo "maple" > /sys/block/sde/queue/scheduler
+echo "maple" > /sys/block/sdf/queue/scheduler
+}
+
+maple_cfq() {
+# IO Scheduler
+echo "cfq" > /sys/block/sda/queue/scheduler
+echo "maple" > /sys/block/sdb/queue/scheduler
+echo "maple" > /sys/block/sdc/queue/scheduler
+echo "maple" > /sys/block/sdd/queue/scheduler
+echo "maple" > /sys/block/sde/queue/scheduler
+echo "cfq" > /sys/block/sdf/queue/scheduler
+
+#Unlock FPS =-60 // to set as stock fps set to 1
+#setprop debug.egl.swapinterval -60
+}
+
+zen() {
+# IO Scheduler
+echo "zen" > /sys/block/sda/queue/scheduler
+echo "zen" > /sys/block/sdb/queue/scheduler
+echo "zen" > /sys/block/sdc/queue/scheduler
+echo "zen" > /sys/block/sdd/queue/scheduler
+echo "zen" > /sys/block/sde/queue/scheduler
+echo "zen" > /sys/block/sdf/queue/scheduler
+
+#Unlock FPS =-60 // to set as stock fps set to 1
+#setprop debug.egl.swapinterval 1
+}
+
+cfq() {
+# IO Scheduler
+echo "cfq" > /sys/block/sda/queue/scheduler
+echo "cfq" > /sys/block/sdb/queue/scheduler
+echo "cfq" > /sys/block/sdc/queue/scheduler
+echo "cfq" > /sys/block/sdd/queue/scheduler
+echo "cfq" > /sys/block/sde/queue/scheduler
+echo "cfq" > /sys/block/sdf/queue/scheduler
+
+#Unlock FPS =-60 // to set as stock fps set to 1
+#setprop debug.egl.swapinterval 1
+}
+
+fiops() {
+# IO Scheduler
+echo "fiops" > /sys/block/sda/queue/scheduler
+echo "fiops" > /sys/block/sdb/queue/scheduler
+echo "fiops" > /sys/block/sdc/queue/scheduler
+echo "fiops" > /sys/block/sdd/queue/scheduler
+echo "fiops" > /sys/block/sde/queue/scheduler
+echo "fiops" > /sys/block/sdf/queue/scheduler
+
+#Unlock FPS =-60 // to set as stock fps set to 1
+#setprop debug.egl.swapinterval 1
+}
+
+dboost() {
+# Performance Config
+echo "0" > /sys/module/cgroup/parameters/enable_cpu_boost
+echo "0" > /sys/module/cgroup/parameters/boost_gpu
+echo "0" > /sys/module/fork/parameters/boost_gpu
+echo "0" > /sys/module/page_alloc/parameters/boost_gpu
+echo "0" > /sys/module/devfreq/parameters/boost_gpu
+echo "0" > /sys/module/devfreq_boost/parameters/boost_gpu
+echo "0" > /sys/module/devfreq_devbw/parameters/boost_gpu
+echo "0" > /sys/module/drm/parameters/boost_gpu
+#echo "0" > /sys/module/msm_drm/parameters/boost_gpu
+echo "0" > /sys/module/msm_kgsl_core/parameters/boost_gpu
+#echo "0" > /sys/module/msm_kgsl_core/parameters/mem_dynamic
+}
+
+eboost() {
+# Performance Config
+echo "1" > /sys/module/cgroup/parameters/enable_cpu_boost
+echo "1" > /sys/module/cgroup/parameters/boost_gpu
+echo "1" > /sys/module/fork/parameters/boost_gpu
+echo "1" > /sys/module/page_alloc/parameters/boost_gpu
+echo "1" > /sys/module/devfreq/parameters/boost_gpu
+echo "1" > /sys/module/devfreq_boost/parameters/boost_gpu
+echo "1" > /sys/module/devfreq_devbw/parameters/boost_gpu
+echo "1" > /sys/module/drm/parameters/boost_gpu
+#echo "1" > /sys/module/msm_drm/parameters/boost_gpu
+echo "1" > /sys/module/msm_kgsl_core/parameters/boost_gpu
+#echo "1" > /sys/module/msm_kgsl_core/parameters/mem_dynamic
+}
+
+gpboost() {
+# Performance Config
+echo "0" > /sys/module/cgroup/parameters/enable_cpu_boost
+echo "0" > /sys/module/cgroup/parameters/boost_gpu
+echo "0" > /sys/module/fork/parameters/boost_gpu
+echo "0" > /sys/module/page_alloc/parameters/boost_gpu
+echo "1" > /sys/module/devfreq/parameters/boost_gpu
+echo "1" > /sys/module/devfreq_boost/parameters/boost_gpu
+echo "1" > /sys/module/devfreq_devbw/parameters/boost_gpu
+echo "1" > /sys/module/drm/parameters/boost_gpu
+#echo "1" > /sys/module/msm_drm/parameters/boost_gpu
+echo "1" > /sys/module/msm_kgsl_core/parameters/boost_gpu
+#echo "1" > /sys/module/msm_kgsl_core/parameters/mem_dynamic
+}
+
+gboost() {
+# Performance Config
+echo "0" > /sys/module/cgroup/parameters/enable_cpu_boost
+echo "0" > /sys/module/cgroup/parameters/boost_gpu
+echo "0" > /sys/module/fork/parameters/boost_gpu
+echo "0" > /sys/module/page_alloc/parameters/boost_gpu
+echo "0" > /sys/module/devfreq/parameters/boost_gpu
+echo "0" > /sys/module/devfreq_boost/parameters/boost_gpu
+echo "0" > /sys/module/devfreq_devbw/parameters/boost_gpu
+echo "0" > /sys/module/drm/parameters/boost_gpu
+echo "1" > /sys/module/drm/parameters/boost_gpu
+#echo "1" > /sys/module/msm_drm/parameters/boost_gpu
+echo "0" > /sys/module/msm_kgsl_core/parameters/boost_gpu
+#echo "1" > /sys/module/msm_kgsl_core/parameters/mem_dynamic
+}
+
+#Sched Boost
+dstune() {
+stune="/dev/stune"
+
+echo "0" > $stune/schedtune.boost
+echo "0" > $stune/schedtune.sched_boost_enabled
+echo "0" > $stune/schedtune.sched_boost_no_override
+echo "0" > $stune/schedtune.prefer_idle
+echo "0" > $stune/schedtune.colocate
+echo "0" > $stune/cgroup.clone_children
+echo "0" > $stune/cgroup.sane_behavior
+
+#top app
+echo "0" > $stune/top-app/schedtune.boost
+echo "1" > $stune/top-app/schedtune.sched_boost_enabled
+echo "1" > $stune/top-app/schedtune.sched_boost_no_override
+echo "0" > $stune/top-app/schedtune.prefer_idle
+echo "0" > $stune/top-app/cgroup.clone_children
+
+#rt
+echo "0" > $stune/rt/schedtune.boost
+echo "0" > $stune/rt/schedtune.sched_boost_enabled
+echo "0" > $stune/rt/schedtune.sched_boost_no_override
+echo "0" > $stune/rt/schedtune.prefer_idle
+echo "0" > $stune/rt/cgroup.clone_children
+
+#fg app
+echo "0" > $stune/foreground/schedtune.boost
+echo "1" > $stune/foreground/schedtune.sched_boost_enabled
+echo "0" > $stune/foreground/schedtune.sched_boost_no_override
+echo "0" > $stune/foreground/schedtune.prefer_idle
+echo "0" > $stune/foreground/cgroup.clone_children
+
+#bg app
+echo "-10" > $stune/background/schedtune.boost
+echo "0" > $stune/background/schedtune.sched_boost_enabled
+echo "0" > $stune/background/schedtune.sched_boost_no_override
+echo "0" > $stune/background/schedtune.prefer_idle
+echo "0" > $stune/background/cgroup.clone_children
+}
+
+btstune() {
+stune="/dev/stune"
+
+echo "0" > $stune/schedtune.boost
+echo "1" > $stune/schedtune.sched_boost_enabled
+echo "0" > $stune/schedtune.sched_boost_no_override
+echo "0" > $stune/schedtune.prefer_idle
+echo "0" > $stune/schedtune.colocate
+echo "0" > $stune/cgroup.clone_children
+echo "0" > $stune/cgroup.sane_behavior
+
+#top app
+echo "0" > $stune/top-app/schedtune.boost
+echo "1" > $stune/top-app/schedtune.sched_boost_enabled
+echo "0" > $stune/top-app/schedtune.sched_boost_no_override
+echo "0" > $stune/top-app/schedtune.prefer_idle
+echo "0" > $stune/top-app/cgroup.clone_children
+
+#rt
+echo "0" > $stune/rt/schedtune.boost
+echo "1" > $stune/rt/schedtune.sched_boost_enabled
+echo "0" > $stune/rt/schedtune.sched_boost_no_override
+echo "0" > $stune/rt/schedtune.prefer_idle
+echo "0" > $stune/rt/cgroup.clone_children
+
+#fg app
+echo "0" > $stune/foreground/schedtune.boost
+echo "1" > $stune/foreground/schedtune.sched_boost_enabled
+echo "1" > $stune/foreground/schedtune.sched_boost_no_override
+echo "0" > $stune/foreground/schedtune.prefer_idle
+echo "0" > $stune/foreground/cgroup.clone_children
+
+#bg app
+echo "0" > $stune/background/schedtune.boost
+echo "1" > $stune/background/schedtune.sched_boost_enabled
+echo "1" > $stune/background/schedtune.sched_boost_no_override
+echo "0" > $stune/background/schedtune.prefer_idle
+echo "0" > $stune/background/cgroup.clone_children
+}
+
+#Sched Boost - Balance
+bstune() {
+stune="/dev/stune"
+
+echo "1" > $stune/schedtune.boost
+echo "1" > $stune/schedtune.sched_boost_enabled
+
+#top app
+echo "1" > $stune/top-app/schedtune.boost
+echo "1" > $stune/top-app/schedtune.sched_boost_enabled
+echo "1" > $stune/top-app/schedtune.prefer_idle
+
+#fg app
+echo "1" > $stune/foreground/schedtune.boost
+echo "1" > $stune/foreground/schedtune.sched_boost_enabled
+echo "1" > $stune/foreground/schedtune.prefer_idle
+
+#bg app
+echo "-10" > $stune/background/schedtune.boost
+echo "1" > $stune/background/schedtune.sched_boost_enabled
+}
+
+#Sched Boost - Performance
+pstune() {
+stune="/dev/stune"
+
+echo "1" > $stune/schedtune.boost
+echo "1" > $stune/schedtune.sched_boost_enabled
+
+#top app
+echo "10" > $stune/top-app/schedtune.boost
+echo "1" > $stune/top-app/schedtune.sched_boost_enabled
+echo "1" > $stune/top-app/schedtune.prefer_idle
+
+#fg app
+echo "10" > $stune/foreground/schedtune.boost
+echo "1" > $stune/foreground/schedtune.sched_boost_enabled
+echo "1" > $stune/foreground/schedtune.prefer_idle
+
+#bg app
+echo "-10" > $stune/background/schedtune.boost
+echo "1" > $stune/background/schedtune.sched_boost_enabled
+}
+
+#Sched Boost - Performance
+gstune() {
+stune="/dev/stune"
+
+echo "1" > $stune/schedtune.boost
+echo "1" > $stune/schedtune.sched_boost_enabled
+
+#top app
+echo "15" > $stune/top-app/schedtune.boost
+echo "1" > $stune/top-app/schedtune.sched_boost_enabled
+echo "1" > $stune/top-app/schedtune.prefer_idle
+
+#fg app
+echo "10" > $stune/foreground/schedtune.boost
+echo "1" > $stune/foreground/schedtune.sched_boost_enabled
+echo "1" > $stune/foreground/schedtune.prefer_idle
+
+#bg app
+echo "-10" > $stune/background/schedtune.boost
+echo "1" > $stune/background/schedtune.sched_boost_enabled
+}
+
+#CPU Limit Balance
+cpulonbalance() {
+echo "10000" > /sys/devices/system/cpu/cpufreq/policy4/schedutil/up_rate_limit_us
+echo "20000" > /sys/devices/system/cpu/cpufreq/policy4/schedutil/down_rate_limit_us
+echo "10000" > /sys/devices/system/cpu/cpufreq/policy0/schedutil/up_rate_limit_us
+echo "20000" > /sys/devices/system/cpu/cpufreq/policy0/schedutil/down_rate_limit_us
+}
+
+#CPU Limit Battery
+cpulonbattery() {
+echo "3000" > /sys/devices/system/cpu/cpufreq/policy4/schedutil/up_rate_limit_us
+echo "1000" > /sys/devices/system/cpu/cpufreq/policy4/schedutil/down_rate_limit_us
+echo "3000" > /sys/devices/system/cpu/cpufreq/policy0/schedutil/up_rate_limit_us
+echo "1000" > /sys/devices/system/cpu/cpufreq/policy0/schedutil/down_rate_limit_us
+}
+
+#CPU Limit Game - Game+ - Performance
+cpuloff() {
+echo "0" > /sys/devices/system/cpu/cpufreq/policy4/schedutil/up_rate_limit_us
+echo "0" > /sys/devices/system/cpu/cpufreq/policy4/schedutil/down_rate_limit_us
+echo "0" > /sys/devices/system/cpu/cpufreq/policy0/schedutil/up_rate_limit_us
+echo "0" > /sys/devices/system/cpu/cpufreq/policy0/schedutil/down_rate_limit_us
+}
+
+#GPU Tweak On
+gputon() {
+echo "0" > /sys/class/kgsl/kgsl-3d0/bus_split
+echo "1" > /sys/class/kgsl/kgsl-3d0/force_bus_on
+echo "1" > /sys/class/kgsl/kgsl-3d0/force_rail_on
+echo "1" > /sys/class/kgsl/kgsl-3d0/force_clk_on
+}
+
+#GPU Tweak Off
+gputoff() {
+echo "1" > /sys/class/kgsl/kgsl-3d0/bus_split
+echo "0" > /sys/class/kgsl/kgsl-3d0/force_bus_on
+echo "0" > /sys/class/kgsl/kgsl-3d0/force_rail_on
+echo "0" > /sys/class/kgsl/kgsl-3d0/force_clk_on
+}
+
+#Game Mode
+gamemode() {
+	if [ $gmo = 1 ]; then
+		if [ $gm = 1 ]; then
+			# Headup Notification Control
+			if [ ! -d $crom ]; then
+				if [ $gm_hup = 1 ]; then
+					settings put global heads_up_notifications_enabled 0
+					#echo "Game Mode - HeadUp set to 0" >> $GM_DIR/log
+				else
+					settings put global heads_up_notifications_enabled 1
+					#echo "Game Mode - HeadUp set to 1" >> $GM_DIR/log
+				fi
+			fi
+			# Auto Brightness Control
+			if [ $gm_ab = 1 ]; then
+				settings put global screen_brightness_mode 0
+				settings put system screen_brightness_mode 0
+				#echo "Game Mode - Auto Brigtness set to 0" >> $GM_DIR/log
+
+				if [ -d $crom ]; then
+					#MIUI
+					if [ "$bv" -le "1200" ]; then
+						settings put system screen_brightness 1200
+					fi
+				else
+					#AOSP
+					if [ "$bv" -le "50" ]; then
+						settings put system screen_brightness 50
+					fi
+				fi
+			else
+				if [ $gm_abstat = 1 ]; then
+					settings put global screen_brightness_mode 1
+					settings put system screen_brightness_mode 1
+				else
+					settings put global screen_brightness_mode 0
+					settings put system screen_brightness_mode 0
+					settings put system screen_brightness $bvstat
+				fi
+				if [ -f $GM_DIR/abstat ]; then
+					rm -f $GM_DIR/abstat;
+				fi
+				if [ -f $GM_DIR/bvstat ]; then
+					rm -f $GM_DIR/bvstat;
+				fi
+					#echo "Game Mode - Auto Brigtness set to 1" >> $GM_DIR/log
+			fi
+			#Immersive Mode
+			if [ $gm_imm = 1 ]; then
+				settings put global policy_control immersive.navigation=*
+			else
+				settings put global policy_control null*
+			fi
+			# GPU Tweak On
+			if [ $gto = 1 ]; then
+				gstune
+				if [ $profile == 'game' ]; then
+					echo "2" > /sys/class/kgsl/kgsl-3d0/devfreq/adrenoboost
+				elif [ $profile == 'gameplus' ]; then
+					echo "3" > /sys/class/kgsl/kgsl-3d0/devfreq/adrenoboost
+				fi
+			else
+				dstune
+				if [ $profile == 'game' ]; then
+					echo "1" > /sys/class/kgsl/kgsl-3d0/devfreq/adrenoboost
+				elif [ $profile == 'gameplus' ]; then
+					echo "2" > /sys/class/kgsl/kgsl-3d0/devfreq/adrenoboost
+				fi
+			fi
+			#Set Charger On Game
+			if [ $cog = 1 ]; then
+				setprop persist.charger.profile 4
+			else
+				setprop persist.charger.profile 3
+			fi
+			# CPU Max
+
+			# Full Boost on Game
+			if [ $gm_fbg = 1 ]; then
+				eboost
+			else
+				if [ $profile == 'game' ]; then
+					gboost
+				elif [ $profile == 'gameplus' ]; then
+					gpboost
+				fi
+			fi
+
+			if [ $gm_sog = 1 ]; then
+				if [ -d $crom ]; then
+					#MIUI
+					media volume --stream 3 --set 27
+				else
+					#AOSP
+					media volume --stream 3 --set 23
+				fi
+				#media volume --show --stream 5 --set 0
+			fi
+			# Power Saving on Game
+			#if [ $gm_sps = 1 ]; then
+			#	echo "1" >> $sps
+			#else
+			#	echo "$gm_spsstat" >> $sps
+			#fi
+		else
+			if [ $gm_abstat = 1 ]; then
+				settings put global screen_brightness_mode 1
+				settings put system screen_brightness_mode 1
+			else
+				settings put global screen_brightness_mode 0
+				settings put system screen_brightness_mode 0
+				settings put system screen_brightness $bvstat
+			fi
+			#echo "$gm_spsstat" >> $sps
+			settings put global heads_up_notifications_enabled 1
+			settings put global policy_control null*
+			#setprop persist.charger.profile 3
+			if [ -f $GM_DIR/abstat ]; then
+				rm -f $GM_DIR/abstat;
+			fi
+			if [ -f $GM_DIR/bvstat ]; then
+				rm -f $GM_DIR/bvstat;
+			fi
+			if [ -f $GM_DIR/gm_spsstat ]; then
+				rm -f $GM_DIR/gm_spsstat;
+			fi
+		fi
+	else
+		if [ $gm_abstat = 1 ]; then
+			settings put global screen_brightness_mode 1
+			settings put system screen_brightness_mode 1
+		else
+			settings put global screen_brightness_mode 0
+			settings put system screen_brightness_mode 0
+			settings put system screen_brightness $bvstat
+		fi
+		#echo "$gm_spsstat" >> $sps
+		settings put global heads_up_notifications_enabled 1
+		settings put global policy_control null*
+		if [ $gm = 1 ]; then
+			setprop persist.charger.profile 3
+		fi
+		if [ -f $GM_DIR/abstat ]; then
+			rm -f $GM_DIR/abstat;
+		fi
+		if [ -f $GM_DIR/bvstat ]; then
+			rm -f $GM_DIR/bvstat;
+		fi
+		if [ -f $GM_DIR/gm_spsstat ]; then
+			rm -f $GM_DIR/gm_spsstat;
+		fi
+	fi
+}
+
+# Profile Selection
+Balance() {
+# D8G Balance
+
+#Setup Profile
+rm -f /data/media/0/d8g/profiles/profile
+echo "0" >> /data/media/0/d8g/profiles/profile
+
+cfq
+dboost
+if [ $new_profile = 1 ]; then
+	bstune
+else
+	dstune
+fi
+
+echo "schedutil" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+echo "blu_schedutil" > /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor
+echo "1766400" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+echo "2553800" > /sys/devices/system/cpu/cpu4/cpufreq/scaling_max_freq
+echo "0" > /sys/module/cpu_input_boost/parameters/input_boost_freq_lp
+echo "0" > /sys/module/cpu_input_boost/parameters/input_boost_freq_hp
+echo "60" > /sys/module/cpu_input_boost/parameters/input_boost_duration
+echo "msm-adreno-tz" > /sys/class/kgsl/kgsl-3d0/devfreq/governor
+echo "710" > /sys/class/kgsl/kgsl-3d0/max_clock_mhz
+echo "710000000" > /sys/class/kgsl/kgsl-3d0/max_gpuclk
+echo "710000000" > /sys/class/kgsl/kgsl-3d0/devfreq/max_freq
+echo "170" > /sys/class/kgsl/kgsl-3d0/min_clock_mhz
+echo "170000000" > /sys/class/kgsl/kgsl-3d0/min_gpuclk
+echo "170000000" > /sys/class/kgsl/kgsl-3d0/devfreq/min_freq
+echo "1" > /sys/class/kgsl/kgsl-3d0/devfreq/adrenoboost
+echo "1" > /sys/class/kgsl/kgsl-3d0/throttling
+
+#cpulonbalance
+#gputoff
+
+#Input boost
+#echo "0:0 1:0 2:0 3:0 4:0 5:0 6:0 7:0" > /sys/module/cpu_boost/parameters/input_boost_freq
+#echo 32 > /sys/module/cpu_boost/parameters/input_boost_ms
+
+echo "65" > /proc/sys/vm/swappiness
+setprop persist.charger.profile $cv
+
+}
+
+Performance() {
+# D8G Performance
+
+#Setup Profile
+rm -f /data/media/0/d8g/profiles/profile
+echo "1" >> /data/media/0/d8g/profiles/profile
+
+pstune
+if [ $new_profile = 1 ]; then
+	fiops
+else
+	maple
+fi
+eboost
+maxfreqcpu
+
+echo "schedutil" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+echo "schedutil" > /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor
+echo "1766400" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+if [ $new_profile = 1 ]; then
+echo "1056000" > /sys/module/cpu_input_boost/parameters/input_boost_freq_lp
+echo "1228000" > /sys/module/cpu_input_boost/parameters/input_boost_freq_hp
+echo "120" > /sys/module/cpu_input_boost/parameters/input_boost_duration
+else
+echo "0" > /sys/module/cpu_input_boost/parameters/input_boost_freq_lp
+echo "0" > /sys/module/cpu_input_boost/parameters/input_boost_freq_hp
+echo "64" > /sys/module/cpu_input_boost/parameters/input_boost_duration
+fi
+echo "msm-adreno-tz" > /sys/class/kgsl/kgsl-3d0/devfreq/governor
+echo "827" > /sys/class/kgsl/kgsl-3d0/max_clock_mhz
+echo "827000000" > /sys/class/kgsl/kgsl-3d0/max_gpuclk
+echo "827000000" > /sys/class/kgsl/kgsl-3d0/devfreq/max_freq
+echo "180" > /sys/class/kgsl/kgsl-3d0/min_clock_mhz
+echo "180000000" > /sys/class/kgsl/kgsl-3d0/min_gpuclk
+echo "180000000" > /sys/class/kgsl/kgsl-3d0/devfreq/min_freq
+echo "3" > /sys/class/kgsl/kgsl-3d0/devfreq/adrenoboost
+echo "0" > /sys/class/kgsl/kgsl-3d0/throttling
+
+#cpuloff
+#gputon
+
+#Input boost
+#echo "0:1516800 1:1516800 2:1516800 3:1516800 4:1363200 5:1363200 6:1363200 7:1363200" > /sys/module/cpu_boost/parameters/input_boost_freq
+#echo 128 > /sys/module/cpu_boost/parameters/input_boost_ms
+
+echo "60" > /proc/sys/vm/swappiness
+setprop persist.charger.profile $cv
+
+}
+
+Battery() {
+# D8G Battery
+
+#Setup Profile
+rm -f /data/media/0/d8g/profiles/profile
+echo "2" >> /data/media/0/d8g/profiles/profile
+
+zen
+dstune
+dboost
+
+# Performance Config
+echo "1" > /sys/class/kgsl/kgsl-3d0/throttling
+echo "blu_schedutil" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+echo "blu_schedutil" > /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor
+echo "1766800" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+echo "1612800" > /sys/devices/system/cpu/cpu4/cpufreq/scaling_max_freq
+echo "0" > /sys/module/cpu_input_boost/parameters/input_boost_freq_lp
+echo "0" > /sys/module/cpu_input_boost/parameters/input_boost_freq_hp
+echo "30" > /sys/module/cpu_input_boost/parameters/input_boost_duration
+echo "powersave" > /sys/class/kgsl/kgsl-3d0/devfreq/governor
+echo "596" > /sys/class/kgsl/kgsl-3d0/max_clock_mhz
+echo "596000000" > /sys/class/kgsl/kgsl-3d0/max_gpuclk
+echo "596000000" > /sys/class/kgsl/kgsl-3d0/devfreq/max_freq
+echo "170" > /sys/class/kgsl/kgsl-3d0/min_clock_mhz
+echo "170000000" > /sys/class/kgsl/kgsl-3d0/min_gpuclk
+echo "170000000" > /sys/class/kgsl/kgsl-3d0/devfreq/min_freq
+echo "0" > /sys/class/kgsl/kgsl-3d0/devfreq/adrenoboost
+echo "1" > /sys/class/kgsl/kgsl-3d0/throttling
+
+#cpulonbattery
+#gputoff
+
+#Input boost
+#echo "0:0 1:0 2:0 3:0 4:0 5:0 6:0 7:0" > /sys/module/cpu_boost/parameters/input_boost_freq
+#echo 20 > /sys/module/cpu_boost/parameters/input_boost_ms
+
+echo "65" > /proc/sys/vm/swappiness
+setprop persist.charger.profile $cv
+
+}
+
+Gaming() {
+# D8G Gaming
+
+#Setup Profile
+rm -f /data/media/0/d8g/profiles/profile
+echo "3" >> /data/media/0/d8g/profiles/profile
+
+#if [ $gto = 1 ]; then
+#	gstune
+#else
+dstune
+#fi
+deadline
+if [ $new_profile = 1 ]; then
+	gpboost
+else
+	gboost
+fi
+
+echo "schedutil" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+echo "schedutil" > /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor
+echo "1766400" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+echo "2649000" > /sys/devices/system/cpu/cpu4/cpufreq/scaling_max_freq
+if [ $new_profile = 1 ]; then
+echo "1363000" > /sys/module/cpu_input_boost/parameters/input_boost_freq_lp
+echo "1766000" > /sys/module/cpu_input_boost/parameters/input_boost_freq_hp
+echo "120" > /sys/module/cpu_input_boost/parameters/input_boost_duration
+echo "performance" > /sys/class/kgsl/kgsl-3d0/devfreq/governor
+else
+echo "0" > /sys/module/cpu_input_boost/parameters/input_boost_freq_lp
+echo "0" > /sys/module/cpu_input_boost/parameters/input_boost_freq_hp
+echo "64" > /sys/module/cpu_input_boost/parameters/input_boost_duration
+echo "msm-adreno-tz" > /sys/class/kgsl/kgsl-3d0/devfreq/governor
+fi
+echo "827" > /sys/class/kgsl/kgsl-3d0/max_clock_mhz
+echo "827000000" > /sys/class/kgsl/kgsl-3d0/max_gpuclk
+echo "827000000" > /sys/class/kgsl/kgsl-3d0/devfreq/max_freq
+echo "180" > /sys/class/kgsl/kgsl-3d0/min_clock_mhz
+echo "180000000" > /sys/class/kgsl/kgsl-3d0/min_gpuclk
+echo "180000000" > /sys/class/kgsl/kgsl-3d0/devfreq/min_freq
+echo "1" > /sys/class/kgsl/kgsl-3d0/devfreq/adrenoboost
+echo "0" > /sys/class/kgsl/kgsl-3d0/throttling
+
+#cpuloff
+#gputon
+
+#Input boost
+#echo "0:1516800 1:1516800 2:1516800 3:1516800 4:1363200 5:1363200 6:1363200 7:1363200" > /sys/module/cpu_boost/parameters/input_boost_freq
+#echo 128 > /sys/module/cpu_boost/parameters/input_boost_ms
+
+echo "60" > /proc/sys/vm/swappiness
+#setprop persist.charger.profile 3
+
+}
+
+GamingPlus() {
+# D8G Gaming Plus
+
+#Setup Profile
+rm -f /data/media/0/d8g/profiles/profile
+echo "3" >> /data/media/0/d8g/profiles/profile
+
+deadline
+#if [ $gto = 1 ]; then
+#	gstune
+#else
+dstune
+#fi
+if [ $new_profile = 1 ]; then
+	eboost
+else
+	gpboost
+fi
+maxfreqcpu
+
+echo "schedutil" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+echo "1766400" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+if [ $new_profile = 1 ]; then
+echo "performance" > /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor
+echo "1420000" > /sys/module/cpu_input_boost/parameters/input_boost_freq_lp
+echo "2029000" > /sys/module/cpu_input_boost/parameters/input_boost_freq_hp
+echo "125" > /sys/module/cpu_input_boost/parameters/input_boost_duration
+echo "performance" > /sys/class/kgsl/kgsl-3d0/devfreq/governor
+else
+echo "schedutil" > /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor
+echo "0" > /sys/module/cpu_input_boost/parameters/input_boost_freq_lp
+echo "0" > /sys/module/cpu_input_boost/parameters/input_boost_freq_hp
+echo "64" > /sys/module/cpu_input_boost/parameters/input_boost_duration
+echo "msm-adreno-tz" > /sys/class/kgsl/kgsl-3d0/devfreq/governor
+fi
+echo "827" > /sys/class/kgsl/kgsl-3d0/max_clock_mhz
+echo "827000000" > /sys/class/kgsl/kgsl-3d0/max_gpuclk
+echo "827000000" > /sys/class/kgsl/kgsl-3d0/devfreq/max_freq
+echo "180" > /sys/class/kgsl/kgsl-3d0/min_clock_mhz
+echo "180000000" > /sys/class/kgsl/kgsl-3d0/min_gpuclk
+echo "180000000" > /sys/class/kgsl/kgsl-3d0/devfreq/min_freq
+echo "2" > /sys/class/kgsl/kgsl-3d0/devfreq/adrenoboost
+echo "0" > /sys/class/kgsl/kgsl-3d0/throttling
+
+#cpuloff
+#gputon
+
+#Input boost
+#echo "0:1516800 1:1516800 2:1516800 3:1516800 4:1363200 5:1363200 6:1363200 7:1363200" > /sys/module/cpu_boost/parameters/input_boost_freq
+#echo 128 > /sys/module/cpu_boost/parameters/input_boost_ms
+
+echo "60" > /proc/sys/vm/swappiness
+#setprop persist.charger.profile 3
+
+}
+
+Balance_user() {
+FILE=$D8G_PROFILE/balance
+if [ -f $FILE ]; then
+	#Setup Profile
+	rm -f /data/media/0/d8g/profiles/profile
+	echo "0" >> /data/media/0/d8g/profiles/profile
+
+	sleep 1
+	sh $FILE >/dev/null
+
+else
+	Balance
+fi
+}
+
+Performance_user() {
+FILE=$D8G_PROFILE/performance
+if [ -f $FILE ]; then
+	#Setup Profile
+	rm -f /data/media/0/d8g/profiles/profile
+	echo "1" >> /data/media/0/d8g/profiles/profile
+
+	sleep 1
+	sh $FILE >/dev/null
+
+else
+	Performance
+fi
+}
+
+Battery_user() {
+FILE=$D8G_PROFILE/battery
+if [ -f $FILE ]; then
+	#Setup Profile
+	rm -f /data/media/0/d8g/profiles/profile
+	echo "2" >> /data/media/0/d8g/profiles/profile
+
+	sleep 1
+	sh $FILE >/dev/null
+
+else
+	Battery
+fi
+}
+
+Gaming_user() {
+FILE=$D8G_PROFILE/game
+if [ -f $FILE ]; then
+	#Setup Profile
+	rm -f /data/media/0/d8g/profiles/profile
+	echo "3" >> /data/media/0/d8g/profiles/profile
+
+	sleep 1
+	sh $FILE >/dev/null
+
+else
+	Gaming
+fi
+}
+
+GamingPlus_user() {
+FILE=$D8G_PROFILE/gameplus
+if [ -f $FILE ]; then
+	#Setup Profile
+	rm -f /data/media/0/d8g/profiles/profile
+	echo "4" >> /data/media/0/d8g/profiles/profile
+
+	sleep 1
+	sh $FILE >/dev/null
+
+else
+	GamingPlus
+fi
+}
+
+# Run Profile
+if [ $profile == 'performance' ]; then
+	if [ -f $D8G_PROFILE/performance ]; then
+		Performance_user
+	else
+		Performance
+	fi
+	ADDPRO=$D8G_PAS/performance
+	if [ -f $ADDPRO ]; then
+		sleep 1
+		sh $ADDPRO >/dev/null
+	fi
+	# Profile Performance as Game
+	if [ $pag = 1 ]; then
+		gm=1
+	else
+		gm=0
+	fi
+	gamemode
+elif [ $profile == 'battery' ]; then
+	if [ -f $D8G_PROFILE/battery ]; then
+		Battery_user
+	else
+		Battery
+	fi
+	ADDPRO=$D8G_PAS/battery
+	if [ -f $ADDPRO ]; then
+		sleep 1
+		sh $ADDPRO >/dev/null
+	fi
+	gm=0
+	gamemode
+elif [ $profile == 'game' ]; then
+	if [ -f $D8G_PROFILE/game ]; then
+		Gaming_user
+	else
+		Gaming
+	fi
+	ADDPRO=$D8G_PAS/game
+	if [ -f $ADDPRO ]; then
+		sleep 1
+		sh $ADDPRO >/dev/null
+	fi
+	gm=1
+	gamemode
+elif [ $profile == 'gameplus' ]; then
+	if [ -f $D8G_PROFILE/gameplus ]; then
+		GamingPlus_user
+	else
+		GamingPlus
+	fi
+	ADDPRO=$D8G_PAS/gameplus
+	if [ -f $ADDPRO ]; then
+		sleep 1
+		sh $ADDPRO >/dev/null
+	fi
+	gm=1
+	gamemode
+else
+	if [ -f $D8G_PROFILE/balance ]; then
+		Balance_user
+	else
+		Balance
+	fi
+	ADDPRO=$D8G_PAS/balance
+	if [ -f $ADDPRO ]; then
+		sleep 1
+		sh $ADDPRO >/dev/null
+	fi
+	gm=0
+	gamemode
+fi
