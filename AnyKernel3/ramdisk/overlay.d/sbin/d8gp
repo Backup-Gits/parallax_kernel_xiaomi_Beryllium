@@ -690,9 +690,9 @@ echo "0" > /sys/module/cpu_input_boost/parameters/input_boost_freq_hp
 echo "64" > /sys/module/cpu_input_boost/parameters/input_boost_duration
 fi
 echo "msm-adreno-tz" > /sys/class/kgsl/kgsl-3d0/devfreq/governor
-echo "827" > /sys/class/kgsl/kgsl-3d0/max_clock_mhz
-echo "827000000" > /sys/class/kgsl/kgsl-3d0/max_gpuclk
-echo "827000000" > /sys/class/kgsl/kgsl-3d0/devfreq/max_freq
+echo "835" > /sys/class/kgsl/kgsl-3d0/max_clock_mhz
+echo "835000000" > /sys/class/kgsl/kgsl-3d0/max_gpuclk
+echo "835000000" > /sys/class/kgsl/kgsl-3d0/devfreq/max_freq
 echo "180" > /sys/class/kgsl/kgsl-3d0/min_clock_mhz
 echo "180000000" > /sys/class/kgsl/kgsl-3d0/min_gpuclk
 echo "180000000" > /sys/class/kgsl/kgsl-3d0/devfreq/min_freq
@@ -843,9 +843,9 @@ echo "0" > /sys/module/cpu_input_boost/parameters/input_boost_freq_hp
 echo "64" > /sys/module/cpu_input_boost/parameters/input_boost_duration
 echo "msm-adreno-tz" > /sys/class/kgsl/kgsl-3d0/devfreq/governor
 fi
-echo "827" > /sys/class/kgsl/kgsl-3d0/max_clock_mhz
-echo "827000000" > /sys/class/kgsl/kgsl-3d0/max_gpuclk
-echo "827000000" > /sys/class/kgsl/kgsl-3d0/devfreq/max_freq
+echo "830" > /sys/class/kgsl/kgsl-3d0/max_clock_mhz
+echo "830000000" > /sys/class/kgsl/kgsl-3d0/max_gpuclk
+echo "830000000" > /sys/class/kgsl/kgsl-3d0/devfreq/max_freq
 echo "180" > /sys/class/kgsl/kgsl-3d0/min_clock_mhz
 echo "180000000" > /sys/class/kgsl/kgsl-3d0/min_gpuclk
 echo "180000000" > /sys/class/kgsl/kgsl-3d0/devfreq/min_freq
