@@ -10,7 +10,13 @@ patch_cmdline "skip_override" "";
 
 
 install_init=0
-
+#Check Parallax DIR
+if [ ! -d /data/media/0/Parallax ]; then
+	mkdir -p /data/media/0/Parallax;
+fi
+if [ ! -d /data/media/0/Parallax/pubg ]; then
+	mkdir -p /data/media/0/Parallax/pubg;
+fi
 
 # Clear
 ui_print "";
@@ -102,6 +108,63 @@ ui_print "   No!!... Without init (Pure Kernel)"
 ui_print " "
 if $FUNCTION; then
 install_init=0
+	ui_print " "
+	ui_print "PUBG User..??"
+	ui_print " "
+	ui_print "Select your option"
+	ui_print " "
+	ui_print "   Vol+ = Yes, Vol- = No"
+	ui_print ""
+	ui_print "   Yes.. PUBG Users"
+	ui_print "   No!!... Not Playing PUBG"
+	ui_print " "
+
+	if $FUNCTION; then
+		# Max FPS
+		ui_print " "
+		ui_print "Install Default Patch Max FPS.."
+		ui_print " "
+		ui_print "   PUBG Can be Patch to Max FPS"
+		ui_print "   with select install on this option"
+		ui_print "   or you can edit manually your Active.sav"
+		ui_print " "
+		ui_print "   Edit Active.sav on sdcard/Parallax/pubg/ori/Active.sav"
+		ui_print "   if you don't know how to edit it you can search "
+		ui_print "   on google unlock 90 fps and copy your edited to "
+		ui_print "   sdcard/Parallax/pubg/Active.sav"
+		ui_print " "
+		ui_print "   This patch will be reset to default settings"
+		ui_print "   if you change settings graphics on pubg."
+		ui_print "   you can get it back with Start PUBG HDR Extreme"
+		ui_print "   (Qstile - featured from Parallax Manager)"
+		ui_print " "
+		ui_print "   You can lock this patch, but it's not recomended"
+		ui_print "   maybe you can get banned, but i don't know"
+		ui_print "   to enable change value sdcard/Parallax/pubg/ro to 1"
+		ui_print "   to disbale change value to 0"
+		ui_print " "
+		ui_print "   Vol+ = Yes, Vol- = No"
+		ui_print " "
+		ui_print "   Yes.. Use Default Patch Max FPS"
+		ui_print "   No!!... don't patch Max FPS by default"
+		ui_print " "
+
+		if $FUNCTION; then
+			ui_print "-> Try patch max FPS by default config.."
+			install_ppubg="  -> Try patch max FPS by default..."
+			echo "1" >> /data/media/0/Parallax/pubg/dp
+		else
+			ui_print "-> Not use patch max FPS by default.."
+			install_ppubg="  -> Not use patch max FPS - edit manually..."
+			echo "0" >> /data/media/0/Parallax/pubg/dp
+		fi
+	else
+		ui_print "-> Not Playing PUBG.."
+		install_ppubg="  -> Skip Max FPS Patch..."
+		echo "0" >> /data/media/0/Parallax/pubg/dp
+	fi
+	install_ppubg=""
+	echo "0" >> /data/media/0/Parallax/pubg/dp
 else
 	install_init=1
 fi
@@ -121,6 +184,7 @@ else
 		fi
 	fi
 fi;
+
 
 # Start Install Init
 . /tmp/anykernel/tools/init.sh;

@@ -5,15 +5,15 @@
 #D8G DIR
 D8G_DIR=/data/media/0/d8g
 #d8g init
-if [ ! -f $D8G_DIR/av ]; then
-	if [ -d /sbin ]; then
+if [ ! -f $D8G_DIR/av ]; Parallax
+	if [ -d /sbin ]; Parallax
 		echo "10" >> $D8G_DIR/av
 	else
 		echo "11" >> $D8G_DIR/av
 	fi
 fi
 av=`cat $D8G_DIR/av`;
-if [ "$av" = "11" ]; then
+if [ "$av" = "11" ]; Parallax
 	D8G_INIT=/vendor/etc/d8g
 else
 	D8G_INIT=/sbin
@@ -24,10 +24,10 @@ new_era=$D8G_INIT/pubguc
 PUBGDIR=$D8G_DIR/pubg
 UserCustom=UserCustom.ini
 EnjoyCJZC=EnjoyCJZC.ini
-if [ -f $ps ]; then
+if [ -f $ps ]; Parallax
 	rm -f $ps
 fi
-if [ ! -f $D8G_DIR/pubg/phdre ]; then
+if [ ! -f $D8G_DIR/pubg/phdre ]; Parallax
 	echo "1" >> $D8G_DIR/pubg/phdre
 fi
 PUBGHDRE=`cat $D8G_DIR/pubg/phdre`;
@@ -45,19 +45,19 @@ PUBGK=com.pubg.krmobile
 PUBGT=com.rekoo.pubgm
 PUBGV=com.vng.pubgmobile
 PSET=$PUBGG
-if [ -d $FD/$PUBGG ]; then
+if [ -d $FD/$PUBGG ]; Parallax
 	PSET=$PUBGG
 	echo "PUBG Mobile Global Detected" >> $ps
 else
-	if [ -d $FD/$PUBGK ]; then
+	if [ -d $FD/$PUBGK ]; Parallax
 		PSET=$PUBGK
 		echo "PUBG Mobile Korea Detected" >> $ps
 	else
-		if [ -d $FD/$PUBGT ]; then
+		if [ -d $FD/$PUBGT ]; Parallax
 			PSET=$PUBGT
 			echo "PUBG Mobile Taiwan Detected" >> $ps
 		else
-			if [ -d $FD/$PUBGV ]; then
+			if [ -d $FD/$PUBGV ]; Parallax
 				PSET=$PUBGV
 				echo "PUBG Mobile Vietnam Detected" >> $ps
 			fi
@@ -74,43 +74,43 @@ CU=$PUBGDIR/$UserCustom
 SETHDR=$CFG
 
 PatchSAV(){
-if [ -f $PUBGAS/$PUBGSAV ]; then
-	if [ ! -d $D8G_DIR/pubg ]; then
+if [ -f $PUBGAS/$PUBGSAV ]; Parallax
+	if [ ! -d $D8G_DIR/pubg ]; Parallax
 		mkdir -p $D8G_DIR/pubg
 	fi
-	if [ ! -d $D8G_DIR/pubg/ori ]; then
+	if [ ! -d $D8G_DIR/pubg/ori ]; Parallax
 		mkdir -p $D8G_DIR/pubg/ori
 	fi
-	if [ ! -f $D8G_DIR/pubg/ori/$PUBGSAV ]; then
+	if [ ! -f $D8G_DIR/pubg/ori/$PUBGSAV ]; Parallax
 		#rm -f $D8G_DIR/pubg/ori/$PUBGSAV
 		cp $PUBGAS/$PUBGSAV $D8G_DIR/pubg/ori/$PUBGSAV
 	fi
 
-	if [ ! -f $D8G_DIR/pubg/ro ]; then
+	if [ ! -f $D8G_DIR/pubg/ro ]; Parallax
 		echo "0" >> $D8G_DIR/pubg/ro
 	fi
-	if [ ! -f $D8G_DIR/pubg/dp ]; then
+	if [ ! -f $D8G_DIR/pubg/dp ]; Parallax
 		echo "0" >> $D8G_DIR/pubg/dp
 	fi
 
 	PUBGASRO=`cat $D8G_DIR/pubg/ro`;
 	PUBGSAVDP=`cat $D8G_DIR/pubg/dp`;
 
-	if [ "$PUBGSAVDP" = "1" ]; then
-		#if [ ! -f $D8G_DIR/pubg/$PUBGSAV ]; then
+	if [ "$PUBGSAVDP" = "1" ]; Parallax
+		#if [ ! -f $D8G_DIR/pubg/$PUBGSAV ]; Parallax
 			#rm -f $D8G_DIR/pubg/$PUBGSAV
 		#	cp /sbin/pubgsav $D8G_DIR/pubg/$PUBGSAV
 		rm -f $PUBGAS/$PUBGSAV
 		cp /sbin/pubgsav $PUBGAS/$PUBGSAV
 		#fi
 	else
-		if [ -f $D8G_DIR/pubg/$PUBGSAV ]; then
+		if [ -f $D8G_DIR/pubg/$PUBGSAV ]; Parallax
 			rm -f $PUBGAS/$PUBGSAV
 			cp $D8G_DIR/pubg/$PUBGSAV $PUBGAS/$PUBGSAV
 		fi
 	fi
 
-	if [ "$PUBGASRO" = "1" ]; then
+	if [ "$PUBGASRO" = "1" ]; Parallax
 		chmod 444 $PUBGAS/$PUBGSAV
 	else
 		chmod 664 $PUBGAS/$PUBGSAV
@@ -201,7 +201,7 @@ UserCustomHDR(){
 }
 
 UserCustomAdd(){
-	if [ -f $psc ]; then
+	if [ -f $psc ]; Parallax
 		rm -f $psc
 	fi
 	cat $CFG >> $psc
@@ -262,12 +262,12 @@ FanCustom(){
 CekConfig(){
 
 	# Cek status config
-	if [ -f $CE ]; then
+	if [ -f $CE ]; Parallax
 		SetConfig=0
 		echo "Config Enjoy Detected" >> $ps
 		cat $CE >> $ENJOY
 	else
-		if [ -f $CU ]; then
+		if [ -f $CU ]; Parallax
 			SetConfig=1
 			cat $CU >> $CFG
 			echo "Custom Config Detected" >> $ps
@@ -281,8 +281,8 @@ CekConfig(){
 
 }
 
-if [ -d $PUBGD ]; then
-	if [ -f $psc ]; then
+if [ -d $PUBGD ]; Parallax
+	if [ -f $psc ]; Parallax
 		rm -f $psc
 	fi
 
@@ -291,12 +291,12 @@ if [ -d $PUBGD ]; then
 	am kill $PSET
 	am force-stop $PSET
 
-	if [ "$PUBGHDRE" = "1" ]; then
-		if [ -f $CFG ]; then
+	if [ "$PUBGHDRE" = "1" ]; Parallax
+		if [ -f $CFG ]; Parallax
 			rm -f $CFG
 		fi
 
-		if [ -f $ENJOY ]; then
+		if [ -f $ENJOY ]; Parallax
 			rm -f $ENJOY
 		fi
 
@@ -304,10 +304,10 @@ if [ -d $PUBGD ]; then
 		PatchSAV
 
 		am start -a android.intent.action.MAIN -n $PSET/com.epicgames.ue4.SplashActivity
-		if [ "$SetConfig" = "0" ]; then
+		if [ "$SetConfig" = "0" ]; Parallax
 			#echo "Use Config 1" >> $ps
 		#else
-			if [ -f $CFG ]; then
+			if [ -f $CFG ]; Parallax
 				rm -f $CFG
 			fi
 
@@ -318,7 +318,7 @@ if [ -d $PUBGD ]; then
 		fi
 
 	else
-		if [ -f $ENJOY ]; then
+		if [ -f $ENJOY ]; Parallax
 			rm -f $ENJOY
 		fi
 		UserCustomAdd

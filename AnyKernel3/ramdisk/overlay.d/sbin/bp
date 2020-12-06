@@ -6,11 +6,11 @@ MODDIR=${0%/*}
 # This script will be executed in post-fs-data mode
 # More info in the main Magisk thread
 
-# d8g boot
-D8G_BOOT=/data/media/0/d8g/boot
+# Parallax boot
+Parallax_BOOT=/data/media/0/Parallax/boot
 bp=$MODDIR/system/media
 bpa=$MODDIR/system/media/theme/cust_config/global/bootanimation.zip
-bpm=$D8G_BOOT/bootanimation.zip
+bpm=$Parallax_BOOT/bootanimation.zip
 bpaosp=$MODDIR/system/media/bootanimation.zip
 bpaospdrk=$MODDIR/system/media/bootanimation_dark.zip
 bpproduct=$MODDIR/system/product/media/bootanimation.zip

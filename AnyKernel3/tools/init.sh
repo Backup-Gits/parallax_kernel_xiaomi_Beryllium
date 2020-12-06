@@ -9,25 +9,25 @@ exec_util() {
   LD_LIBRARY_PATH=/system/lib64 $UTILS $1
 }
 
-RC_INIT=init.d8g.rc
+RC_INIT=init.Parallax.rc
 RC_DC=init.dc.rc
 RC_PUBG=init.pubg.rc
 RC_PROFIL=init.spectrum.rc
 RC_VDIR=/vendor/etc/init
-SH_DIR=/vendor/etc/d8g
+SH_DIR=/vendor/etc/Parallax
 TMP_INIT=$ramdisk/overlay.d
 TMP_SH=$TMP_INIT/sbin
 #AV=getprop ro.system.build.version.sdk
 
 copy_initA11() {
 	exec_util "cp -af $TMP_INIT/$RC_INIT $RC_VDIR"
-	rm -f $TMP_INIT/init.d8g.rc
+	rm -f $TMP_INIT/init.Parallax.rc
 	
 	ImplementInit
 }
 
 RM_A10() {
-	#rm -f $TMP_INIT/init.d8g.rc
+	#rm -f $TMP_INIT/init.Parallax.rc
 	rm -f $TMP_INIT/init.dc.rc
 	rm -f $TMP_INIT/init.pubg.rc
 	rm -f $TMP_INIT/init.spectrum.rc
@@ -69,8 +69,8 @@ fi
 ImplementInit() {
 	#ui_print " ";
 	#ui_print "Implementing Init...";
-	if ! grep -q 'init.d8g.rc' /vendor/etc/init/hw/init.qcom.rc; then
-		sed -i "/POSSIBILITY/c\import /vendor/etc/init/init.d8g.rc" /vendor/etc/init/hw/init.qcom.rc
+	if ! grep -q 'init.Parallax.rc' /vendor/etc/init/hw/init.qcom.rc; then
+		sed -i "/POSSIBILITY/c\import /vendor/etc/init/init.Parallax.rc" /vendor/etc/init/hw/init.qcom.rc
 	#	ui_print "-> Implementing Init Success";
 	#	ui_print " ";
 	#else
@@ -100,21 +100,21 @@ InitA10() {
 	#Remove Init A11
 	RM_A11
 
-	echo "10" >> /data/media/0/d8g/av
+	echo "10" >> /data/media/0/Parallax/av
 }
 
 InitA11() {
 	#ui_print "Android : 11"; ui_print " ";
 	#Remove Init Android 11
 	RM_A11
-	#Make dir D8G Config
+	#Make dir Parallax Config
 	if [ ! -d $SH_DIR ]; then
 		mkdir -p $SH_DIR
 	fi
-	if [ -d /data/.d8g ]; then
-		rm -rf /data/.d8g
+	if [ -d /data/.Parallax ]; then
+		rm -rf /data/.Parallax
 	fi
-	mkdir -p /data/.d8g
+	mkdir -p /data/.Parallax
 	#Install Init Android 11
 	exec_util "cp -af $TMP_INIT/$RC_INIT $RC_VDIR"
 	exec_util "cp -af $TMP_INIT/$RC_DC $RC_VDIR"
@@ -122,12 +122,12 @@ InitA11() {
 	exec_util "cp -af $TMP_INIT/$RC_PROFIL $RC_VDIR"
 
 	exec_util "cp -af $TMP_SH/bp $SH_DIR"
-	exec_util "cp -af $TMP_SH/d8ginit $SH_DIR"
-	exec_util "cp -af $TMP_SH/d8gp $SH_DIR"
-	exec_util "cp -af $TMP_SH/d8grm $SH_DIR"
+	exec_util "cp -af $TMP_SH/Parallaxinit $SH_DIR"
+	exec_util "cp -af $TMP_SH/Parallaxp $SH_DIR"
+	exec_util "cp -af $TMP_SH/Parallaxrm $SH_DIR"
 	exec_util "cp -af $TMP_SH/dc $SH_DIR"
 	exec_util "cp -af $TMP_SH/dkm $SH_DIR"
-	exec_util "cp -af $TMP_SH/dkm /data/.d8g"
+	exec_util "cp -af $TMP_SH/dkm /data/.Parallax"
 	exec_util "cp -af $TMP_SH/pubg $SH_DIR"
 	exec_util "cp -af $TMP_SH/pubgsav $SH_DIR"
 	exec_util "cp -af $TMP_SH/pubguc $SH_DIR"
@@ -140,12 +140,12 @@ InitA11() {
 
 	#Remove Init Android 9 - 10
 	#A10
-	rm -f $TMP_INIT/init.d8g.rc
+	rm -f $TMP_INIT/init.Parallax.rc
 	rm -rf $TMP_SH;
 
 	ImplementInit
 
-	echo "11" >> /data/media/0/d8g/av
+	echo "11" >> /data/media/0/Parallax/av
 }
 
 perm() {
@@ -154,9 +154,9 @@ perm() {
 	chmod -R 644 $TMP_INIT/$RC_PUBG;
 	chmod -R 644 $TMP_INIT/$RC_PROFIL;
 	chmod -R 755 $TMP_SH/bp;
-	chmod -R 755 $TMP_SH/d8ginit;
-	chmod -R 755 $TMP_SH/d8gp;
-	chmod -R 755 $TMP_SH/d8grm;
+	chmod -R 755 $TMP_SH/Parallaxinit;
+	chmod -R 755 $TMP_SH/Parallaxp;
+	chmod -R 755 $TMP_SH/Parallaxrm;
 	chmod -R 755 $TMP_SH/dc;
 	chmod -R 644 $TMP_SH/dkm;
 	chmod -R 755 $TMP_SH/pubg;

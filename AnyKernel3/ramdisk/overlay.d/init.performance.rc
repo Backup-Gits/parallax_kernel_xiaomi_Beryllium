@@ -4,25 +4,25 @@
 
 # Balance (default profile)
 on property:persist.performance.profile=0
-   exec u:r:magisk:s0 root root -- /sbin/d8gp balance
-   exec u:r:magisk:s0 root root -- /vendor/etc/d8g/d8gp balance
+   exec u:r:magisk:s0 root root -- /sbin/Parallaxp balance
+   exec u:r:magisk:s0 root root -- /vendor/etc/Parallax/Parallaxp balance
 
 # Performance
 on property:persist.performance.profile=1
-   exec u:r:magisk:s0 root root -- /sbin/d8gp performance
-   exec u:r:magisk:s0 root root -- /vendor/etc/d8g/d8gp performance
+   exec u:r:magisk:s0 root root -- /sbin/Parallaxp performance
+   exec u:r:magisk:s0 root root -- /vendor/etc/Parallax/Parallaxp performance
 
 # Battery
 on property:persist.performance.profile=2
-   exec u:r:magisk:s0 root root -- /sbin/d8gp battery
-   exec u:r:magisk:s0 root root -- /vendor/etc/d8g/d8gp battery
+   exec u:r:magisk:s0 root root -- /sbin/Parallaxp battery
+   exec u:r:magisk:s0 root root -- /vendor/etc/Parallax/Parallaxp battery
 
 # Gaming
 on property:persist.performance.profile=3
-   exec u:r:magisk:s0 root root -- /sbin/d8gp game
-   exec u:r:magisk:s0 root root -- /vendor/etc/d8g/d8gp game
+   exec u:r:magisk:s0 root root -- /sbin/Parallaxp game
+   exec u:r:magisk:s0 root root -- /vendor/etc/Parallax/Parallaxp game
 
 # Gaming Plus
 on property:persist.performance.profile=4
-   exec u:r:magisk:s0 root root -- /sbin/d8gp gameplus
-   exec u:r:magisk:s0 root root -- /vendor/etc/d8g/d8gp gameplus
+   exec u:r:magisk:s0 root root -- /sbin/Parallaxp gameplus
+   exec u:r:magisk:s0 root root -- /vendor/etc/Parallax/Parallaxp gameplus

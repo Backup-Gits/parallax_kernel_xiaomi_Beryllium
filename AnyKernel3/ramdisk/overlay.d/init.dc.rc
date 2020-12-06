@@ -9,24 +9,24 @@
 # Default 2800
 on property:persist.charger.profile=0
 	exec u:r:magisk:s0 root root -- /sbin/dc
-	exec u:r:magisk:s0 root root -- /vendor/etc/d8g/dc
+	exec u:r:magisk:s0 root root -- /vendor/etc/Parallax/dc
 
 # 3000 
 on property:persist.charger.profile=1
 	exec u:r:magisk:s0 root root -- /sbin/dc
-	exec u:r:magisk:s0 root root -- /vendor/etc/d8g/dc
+	exec u:r:magisk:s0 root root -- /vendor/etc/Parallax/dc
 
 # 3300
 on property:persist.charger.profile=2
 	exec u:r:magisk:s0 root root -- /sbin/dc
-	exec u:r:magisk:s0 root root -- /vendor/etc/d8g/dc
+	exec u:r:magisk:s0 root root -- /vendor/etc/Parallax/dc
 
 # 1200 Game with Charger
 on property:persist.charger.profile=3
 	exec u:r:magisk:s0 root root -- /sbin/dc
-	exec u:r:magisk:s0 root root -- /vendor/etc/d8g/dc
+	exec u:r:magisk:s0 root root -- /vendor/etc/Parallax/dc
 
 # 1800 Game with Charger
 on property:persist.charger.profile=4
 	exec u:r:magisk:s0 root root -- /sbin/dc
-	exec u:r:magisk:s0 root root -- /vendor/etc/d8g/dc
+	exec u:r:magisk:s0 root root -- /vendor/etc/Parallax/dc

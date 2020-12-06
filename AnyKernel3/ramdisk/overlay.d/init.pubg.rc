@@ -7,4 +7,4 @@
 # Patching PUBG
 on property:persist.pubg.profile=0
 	exec u:r:magisk:s0 root root -- /sbin/pubg
-	exec u:r:magisk:s0 root root -- /vendor/etc/d8g/pubg
+	exec u:r:magisk:s0 root root -- /vendor/etc/Parallax/pubg
