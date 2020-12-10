@@ -1462,7 +1462,7 @@ config DYNAMIC_STUNE_BOOST
           If unsure, say N.
 
 config CPUSET_ASSIST
-	bool "Cpuset configuration helper"
+	bool "CPUSet configuration helper"
 	depends on CPUSETS
 	depends on ANDROID
 	help
