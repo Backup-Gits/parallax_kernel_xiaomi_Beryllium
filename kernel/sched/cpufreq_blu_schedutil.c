@@ -683,7 +683,6 @@ static ssize_t pl_store(struct gov_attr_set *attr_set, const char *buf,
 	return count;
 }
 
->>>>>>> e3453ea2e158... cpufreq: blu_schedutil: add some bits from Pixel 3
 static ssize_t iowait_boost_enable_show(struct gov_attr_set *attr_set,
 					char *buf)
 {
