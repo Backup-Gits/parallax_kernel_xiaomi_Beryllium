@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2010 - 2018 Novatek, Inc.
+ * Copyright (C) 2010 - 2017 Novatek, Inc.
+ * Copyright (C) 2019 XiaoMi, Inc.
  *
  * $Revision: 47247 $
  * $Date: 2019-07-10 10:41:36 +0800 (Wed, 10 Jul 2019) $
@@ -23,13 +24,16 @@
 #include <linux/input.h>
 #include <linux/uaccess.h>
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-#include <linux/earlysuspend.h>
-#endif
+
+#include <linux/pm_qos.h>
 
 #include "nt36xxx_mem_map.h"
 
-#define NVT_DEBUG 1
+#define PINCTRL_STATE_ACTIVE		"pmx_ts_active"
+#define PINCTRL_STATE_SUSPEND		"pmx_ts_suspend"
+#define PINCTRL_STATE_RELEASE		"pmx_ts_release"
+#define NVT_COORDS_ARR_SIZE 2
+#define NVT_DEBUG 0
 
 //---GPIO number---
 #define NVTTOUCH_RST_PIN 980
@@ -79,7 +83,7 @@ extern const uint16_t touch_key_array[TOUCH_KEY_NUM];
 //---Customerized func.---
 #define NVT_TOUCH_PROC 1
 #define NVT_TOUCH_EXT_PROC 1
-#define NVT_TOUCH_MP 1
+#define NVT_TOUCH_MP 0
 #define MT_PROTOCOL_B 1
 #define WAKEUP_GESTURE 1
 #if WAKEUP_GESTURE
@@ -88,9 +92,6 @@ extern const uint16_t gesture_key_array[];
 #define BOOT_UPDATE_FIRMWARE 1
 #define BOOT_UPDATE_FIRMWARE_NAME "novatek_nt36672_e10.fw"
 
-#define NVT_LOCKDOWN_SIZE	8
-
-//---Lockdown---
 #define NVT_LOCKDOWN_SIZE	8
 
 struct nvt_config_info {
@@ -126,8 +127,6 @@ struct nvt_ts_data {
 	int8_t phys[32];
 #if defined(CONFIG_DRM)
 	struct notifier_block notifier;
-#elif defined(CONFIG_HAS_EARLYSUSPEND)
-	struct early_suspend early_suspend;
 #endif
 	uint8_t fw_ver;
 	uint8_t x_num;
@@ -154,6 +153,13 @@ struct nvt_ts_data {
 	int gesture_enabled;
 #endif
 	int current_index;
+	bool dev_pm_suspend;
+	struct completion dev_pm_suspend_completion;
+	struct work_struct resume_work;
+	struct workqueue_struct *event_wq;
+	struct pm_qos_request pm_qos_req;
+
+	struct proc_dir_entry *input_proc;
 };
 
 #if WAKEUP_GESTURE
@@ -165,7 +171,7 @@ struct mi_mode_switch {
 #endif
 
 #if NVT_TOUCH_PROC
-struct nvt_flash_data{
+struct nvt_flash_data {
 	rwlock_t lock;
 	struct i2c_client *client;
 };
@@ -180,17 +186,20 @@ typedef enum {
 } RST_COMPLETE_STATE;
 
 typedef enum {
-    EVENT_MAP_HOST_CMD                      = 0x50,
-    EVENT_MAP_HANDSHAKING_or_SUB_CMD_BYTE   = 0x51,
-    EVENT_MAP_RESET_COMPLETE                = 0x60,
-    EVENT_MAP_FWINFO                        = 0x78,
-    EVENT_MAP_PROJECTID                     = 0x9A,
+	EVENT_MAP_HOST_CMD                      = 0x50,
+	EVENT_MAP_HANDSHAKING_or_SUB_CMD_BYTE   = 0x51,
+	EVENT_MAP_RESET_COMPLETE                = 0x60,
+	EVENT_MAP_FWINFO                        = 0x78,
+	EVENT_MAP_PROJECTID                     = 0x9A,
 } I2C_EVENT_MAP;
 
 //---extern structures---
 extern struct nvt_ts_data *ts;
 
-//---extern functions---
+//----kmem cache------
+extern struct kmem_cache *kmem_ts_data_pool;
+
+/*---extern functions---*/
 extern int32_t CTP_I2C_READ(struct i2c_client *client, uint16_t address, uint8_t *buf, uint16_t len);
 extern int32_t CTP_I2C_WRITE(struct i2c_client *client, uint16_t address, uint8_t *buf, uint16_t len);
 extern void nvt_bootloader_reset(void);
@@ -199,7 +208,6 @@ extern int32_t nvt_check_fw_reset_state(RST_COMPLETE_STATE check_reset_state);
 extern int32_t nvt_get_fw_info(void);
 extern int32_t nvt_clear_fw_status(void);
 extern int32_t nvt_check_fw_status(void);
-extern int32_t nvt_set_page(uint16_t i2c_addr, uint32_t addr);
 extern void nvt_stop_crc_reboot(void);
 
 extern int32_t Init_BootLoader(void);

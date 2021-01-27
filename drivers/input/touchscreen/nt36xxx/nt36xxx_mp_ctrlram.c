@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2010 - 2018 Novatek, Inc.
+ * Copyright (C) 2010 - 2017 Novatek, Inc.
+ * Copyright (C) 2019 XiaoMi, Inc.
  *
  * $Revision: 47247 $
  * $Date: 2019-07-10 10:41:36 +0800 (Wed, 10 Jul 2019) $
@@ -45,32 +46,43 @@
 } while (0)
 
 static uint8_t *RecordResult_Short = NULL;
+static uint8_t *RecordResult_Short_Diff = NULL;
+static uint8_t *RecordResult_Short_Base = NULL;
 static uint8_t *RecordResult_Open = NULL;
 static uint8_t *RecordResult_FWMutual = NULL;
 static uint8_t *RecordResult_FW_CC = NULL;
+static uint8_t *RecordResult_FW_CC_I = NULL;
+static uint8_t *RecordResult_FW_CC_Q = NULL;
 static uint8_t *RecordResult_FW_DiffMax = NULL;
 static uint8_t *RecordResult_FW_DiffMin = NULL;
 
 static int32_t TestResult_Short = 0;
+static int32_t TestResult_Short_Diff = 0;
+static int32_t TestResult_Short_Base = 0;
 static int32_t TestResult_Open = 0;
 static int32_t TestResult_FW_Rawdata = 0;
 static int32_t TestResult_FWMutual = 0;
 static int32_t TestResult_FW_CC = 0;
+static int32_t TestResult_FW_CC_I = 0;
+static int32_t TestResult_FW_CC_Q = 0;
 static int32_t TestResult_Noise = 0;
 static int32_t TestResult_FW_DiffMax = 0;
 static int32_t TestResult_FW_DiffMin = 0;
 
 static int32_t *RawData_Short = NULL;
+static int32_t *RawData_Short_Diff = NULL;
+static int32_t *RawData_Short_Base = NULL;
 static int32_t *RawData_Open = NULL;
 static int32_t *RawData_Diff = NULL;
 static int32_t *RawData_Diff_Min = NULL;
 static int32_t *RawData_Diff_Max = NULL;
 static int32_t *RawData_FWMutual = NULL;
 static int32_t *RawData_FW_CC = NULL;
+static int32_t *RawData_FW_CC_I = NULL;
+static int32_t *RawData_FW_CC_Q = NULL;
 
 static struct proc_dir_entry *NVT_proc_selftest_entry = NULL;
 static int8_t nvt_mp_test_result_printed = 0;
-static uint8_t fw_ver = 0;
 
 extern void nvt_change_mode(uint8_t mode);
 extern uint8_t nvt_get_fw_pipe(void);
@@ -352,98 +364,6 @@ static void nvt_print_criteria(void)
 	NVT_LOG("--\n");
 }
 
-static int32_t nvt_save_rawdata_to_csv(int32_t *rawdata, uint8_t x_ch, uint8_t y_ch, const char *file_path, uint32_t offset)
-{
-	int32_t x = 0;
-	int32_t y = 0;
-	int32_t iArrayIndex = 0;
-	struct file *fp = NULL;
-	char *fbufp = NULL;
-	mm_segment_t org_fs;
-	int32_t write_ret = 0;
-	uint32_t output_len = 0;
-	loff_t pos = 0;
-#if TOUCH_KEY_NUM > 0
-	int32_t k = 0;
-	int32_t keydata_output_offset = 0;
-#endif /* #if TOUCH_KEY_NUM > 0 */
-
-	printk("%s:++\n", __func__);
-	fbufp = (char *)kzalloc(8192, GFP_KERNEL);
-	if (!fbufp) {
-		NVT_ERR("kzalloc for fbufp failed!\n");
-		return -ENOMEM;
-	}
-
-	for (y = 0; y < y_ch; y++) {
-		for (x = 0; x < x_ch; x++) {
-			iArrayIndex = y * x_ch + x;
-			sprintf(fbufp + iArrayIndex * 7 + y * 2, "%5d, ", rawdata[iArrayIndex]);
-		}
-		nvt_print_data_log_in_one_line(rawdata + y * x_ch, x_ch);
-		printk("\n");
-		sprintf(fbufp + (iArrayIndex + 1) * 7 + y * 2,"\r\n");
-	}
-#if TOUCH_KEY_NUM > 0
-	keydata_output_offset = y_ch * x_ch * 7 + y_ch * 2;
-	for (k = 0; k < Key_Channel; k++) {
-		iArrayIndex = y_ch * x_ch + k;
-		sprintf(fbufp + keydata_output_offset + k * 7, "%5d, ", rawdata[iArrayIndex]);
-	}
-	nvt_print_data_log_in_one_line(rawdata + y_ch * x_ch, Key_Channel);
-	printk("\n");
-	sprintf(fbufp + y_ch * x_ch * 7 + y_ch * 2 + Key_Channel * 7, "\r\n");
-#endif /* #if TOUCH_KEY_NUM > 0 */
-
-	org_fs = get_fs();
-	set_fs(KERNEL_DS);
-	fp = filp_open(file_path, O_RDWR | O_CREAT, 0644);
-	if (fp == NULL || IS_ERR(fp)) {
-		NVT_ERR("open %s failed\n", file_path);
-		set_fs(org_fs);
-		if (fbufp) {
-			kfree(fbufp);
-			fbufp = NULL;
-		}
-		return -1;
-	}
-
-#if TOUCH_KEY_NUM > 0
-	output_len = y_ch * x_ch * 7 + y_ch * 2 + Key_Channel * 7 + 2;
-#else
-	output_len = y_ch * x_ch * 7 + y_ch * 2;
-#endif /* #if TOUCH_KEY_NUM > 0 */
-	pos = offset;
-	write_ret = vfs_write(fp, (char __user *)fbufp, output_len, &pos);
-	if (write_ret <= 0) {
-		NVT_ERR("write %s failed\n", file_path);
-		set_fs(org_fs);
-		if (fp) {
-			filp_close(fp, NULL);
-			fp = NULL;
-		}
-		if (fbufp) {
-			kfree(fbufp);
-			fbufp = NULL;
-		}
-		return -1;
-	}
-
-	set_fs(org_fs);
-	if (fp) {
-		filp_close(fp, NULL);
-		fp = NULL;
-	}
-	if (fbufp) {
-		kfree(fbufp);
-		fbufp = NULL;
-	}
-
-	printk("%s:--\n", __func__);
-
-	return 0;
-}
-
 static int32_t nvt_polling_hand_shake_status(void)
 {
 	uint8_t buf[8] = {0};
@@ -554,11 +474,6 @@ static int32_t nvt_read_baseline(int32_t *xdata)
 #endif /* #if TOUCH_KEY_NUM > 0 */
 
 	printk("%s:\n", __func__);
-	// Save Rawdata to CSV file
-	if (nvt_save_rawdata_to_csv(xdata, X_Channel, Y_Channel, FW_RAWDATA_CSV_FILE, 0) < 0) {
-		NVT_ERR("save rawdata to CSV file failed\n");
-		return -EAGAIN;
-	}
 
 	NVT_LOG("--\n");
 
@@ -599,10 +514,14 @@ static int32_t nvt_read_CC(int32_t *xdata)
 #endif /* #if TOUCH_KEY_NUM > 0 */
 
 	printk("%s:\n", __func__);
-	// Save Rawdata to CSV file
-	if (nvt_save_rawdata_to_csv(xdata, X_Channel, Y_Channel, FW_CC_CSV_FILE, 0) < 0) {
-		NVT_ERR("save rawdata to CSV file failed\n");
-		return -EAGAIN;
+	if (ts->carrier_system) {
+		printk("%s:RawData_CC_I:\n", __func__);
+
+#if TOUCH_KEY_NUM > 0
+		rawdata_cc_q_offset = Y_Channel * X_Channel * 7 + Y_Channel * 2 + Key_Channel * 7 + 2;
+#else
+		rawdata_cc_q_offset = Y_Channel * X_Channel * 7 + Y_Channel * 2;
+#endif /* #if TOUCH_KEY_NUM > 0 */
 	}
 
 	NVT_LOG("--\n");
@@ -688,22 +607,14 @@ static int32_t nvt_read_fw_noise(int32_t *xdata)
 	nvt_change_mode(NORMAL_MODE);
 
 	printk("%s:RawData_Diff_Max:\n", __func__);
-	// Save Rawdata to CSV file
-	if (nvt_save_rawdata_to_csv(RawData_Diff_Max, X_Channel, Y_Channel, NOISE_TEST_CSV_FILE, 0) < 0) {
-		NVT_ERR("save rawdata to CSV file failed\n");
-		return -EAGAIN;
-	}
 
 #if TOUCH_KEY_NUM > 0
 	rawdata_diff_min_offset = Y_Channel * X_Channel * 7 + Y_Channel * 2 + Key_Channel * 7 + 2;
 #else
 	rawdata_diff_min_offset = Y_Channel * X_Channel * 7 + Y_Channel * 2;
 #endif /* #if TOUCH_KEY_NUM > 0 */
-	printk("%s:RawData_Diff_Min:\n", __func__);
-	// Save Rawdata to CSV file
-	if (nvt_save_rawdata_to_csv(RawData_Diff_Min, X_Channel, Y_Channel, NOISE_TEST_CSV_FILE, rawdata_diff_min_offset) < 0) {
-		NVT_ERR("save rawdata to CSV file failed\n");
-		return -EAGAIN;
+		printk("%s:RawData_Diff_Min:\n", __func__);
+
 	}
 
 	NVT_LOG("--\n");
@@ -824,14 +735,7 @@ static int32_t nvt_read_fw_open(int32_t *xdata)
 
 	//---Leave Test Mode---
 	nvt_change_mode(NORMAL_MODE);
-
-
 	printk("%s:RawData_Open\n", __func__);
-	// Save RawData to CSV file
-	if (nvt_save_rawdata_to_csv(xdata, X_Channel, Y_Channel, OPEN_TEST_CSV_FILE, 0) < 0) {
-		NVT_ERR("save rawdata to CSV file failed\n");
-		return -EAGAIN;
-	}
 
 	NVT_LOG("--\n");
 
@@ -865,9 +769,9 @@ static int32_t nvt_read_fw_short(int32_t *xdata)
 	}
 
 #if TOUCH_KEY_NUM > 0
-    rawdata_buf = (uint8_t *)kzalloc((X_Channel * Y_Channel + Key_Channel) * 2, GFP_KERNEL);
+	rawdata_buf = (uint8_t *)kzalloc((X_Channel * Y_Channel + Key_Channel) * 2, GFP_KERNEL);
 #else
-    rawdata_buf = (uint8_t *)kzalloc(X_Channel * Y_Channel * 2, GFP_KERNEL);
+	rawdata_buf = (uint8_t *)kzalloc(X_Channel * Y_Channel * 2, GFP_KERNEL);
 #endif /* #if TOUCH_KEY_NUM > 0 */
 	if (!rawdata_buf) {
 		NVT_ERR("kzalloc for rawdata_buf failed!\n");
@@ -892,8 +796,11 @@ static int32_t nvt_read_fw_short(int32_t *xdata)
 	else
 		raw_btn_pipe_addr = ts->mmap->RAW_BTN_PIPE1_ADDR;
 
-    //---change xdata index---
-	nvt_set_page(I2C_FW_Address, raw_btn_pipe_addr);
+	/*---change xdata index---*/
+	buf[0] = 0xFF;
+	buf[1] = (uint8_t)((raw_btn_pipe_addr >> 16) & 0xFF);
+	buf[2] = (uint8_t)((raw_btn_pipe_addr >> 8) & 0xFF);
+	CTP_I2C_WRITE(ts->client, I2C_FW_Address, buf, 3);
 	buf[0] = (uint8_t)(raw_btn_pipe_addr & 0xFF);
 	CTP_I2C_READ(ts->client, I2C_FW_Address, buf, Key_Channel * 2 + 1);
 	memcpy(rawdata_buf + Y_Channel * X_Channel * 2, buf + 1, Key_Channel * 2);
@@ -912,6 +819,48 @@ static int32_t nvt_read_fw_short(int32_t *xdata)
 	}
 #endif /* #if TOUCH_KEY_NUM > 0 */
 
+	/* for carrier sensing system to get short baseline rawdata */
+	if (ts->carrier_system) {
+		/* to get short baseline rawdata at pipe1 */
+		raw_pipe_addr = ts->mmap->RAW_PIPE1_ADDR;
+
+		for (y = 0; y < Y_Channel; y++) {
+			/*---change xdata index---*/
+			buf[0] = 0xFF;
+			buf[1] = (uint8_t)(((raw_pipe_addr + y * X_Channel * 2) >> 16) & 0xFF);
+			buf[2] = (uint8_t)(((raw_pipe_addr + y * X_Channel * 2) >> 8) & 0xFF);
+			CTP_I2C_WRITE(ts->client, I2C_FW_Address, buf, 3);
+			buf[0] = (uint8_t)((raw_pipe_addr + y * X_Channel * 2) & 0xFF);
+			CTP_I2C_READ(ts->client, I2C_FW_Address, buf, X_Channel * 2 + 1);
+			memcpy(rawdata_buf + y * X_Channel * 2, buf + 1, X_Channel * 2);
+		}
+#if TOUCH_KEY_NUM > 0
+		/* to get button short baseline rawdata at pipe1 */
+		raw_btn_pipe_addr = ts->mmap->RAW_BTN_PIPE1_ADDR;
+		/*---change xdata index---*/
+		buf[0] = 0xFF;
+		buf[1] = (uint8_t)((raw_btn_pipe_addr >> 16) & 0xFF);
+		buf[2] = (uint8_t)((raw_btn_pipe_addr >> 8) & 0xFF);
+		CTP_I2C_WRITE(ts->client, I2C_FW_Address, buf, 3);
+		buf[0] = (uint8_t)(raw_btn_pipe_addr & 0xFF);
+		CTP_I2C_READ(ts->client, I2C_FW_Address, buf, Key_Channel * 2 + 1);
+		memcpy(rawdata_buf + Y_Channel * X_Channel * 2, buf + 1, Key_Channel * 2);
+#endif /* #if TOUCH_KEY_NUM > 0 */
+
+		for (y = 0; y < Y_Channel; y++) {
+			for (x = 0; x < X_Channel; x++) {
+				iArrayIndex = y * X_Channel + x;
+				RawData_Short_Base[iArrayIndex] = (int16_t)(rawdata_buf[iArrayIndex * 2] + 256 * rawdata_buf[iArrayIndex * 2 + 1]);
+			}
+		}
+#if TOUCH_KEY_NUM > 0
+		for (k = 0; k < Key_Channel; k++) {
+			iArrayIndex = Y_Channel * X_Channel + k;
+			RawData_Short_Base[iArrayIndex] = (int16_t)(rawdata_buf[iArrayIndex * 2] + 256 * rawdata_buf[iArrayIndex * 2 + 1]);
+		}
+#endif /* #if TOUCH_KEY_NUM > 0 */
+	}
+
 	if (rawdata_buf) {
 		kfree(rawdata_buf);
 		rawdata_buf = NULL;
@@ -920,11 +869,19 @@ static int32_t nvt_read_fw_short(int32_t *xdata)
 	//---Leave Test Mode---
 	nvt_change_mode(NORMAL_MODE);
 
-	printk("%s:RawData_Short\n", __func__);
-	// Save Rawdata to CSV file
-	if (nvt_save_rawdata_to_csv(xdata, X_Channel, Y_Channel, SHORT_TEST_CSV_FILE, 0) < 0) {
-		NVT_ERR("save rawdata to CSV file failed\n");
-		return -EAGAIN;
+	if (ts->carrier_system)
+		printk("%s:RawData_Short_Diff:\n", __func__);
+	else
+		printk("%s:RawData_Short\n", __func__);
+
+	if (ts->carrier_system) {
+#if TOUCH_KEY_NUM > 0
+		rawdata_short_base_offset = Y_Channel * X_Channel * 7 + Y_Channel * 2 + Key_Channel * 7 + 2;
+#else
+		rawdata_short_base_offset = Y_Channel * X_Channel * 7 + Y_Channel * 2;
+#endif /* #if TOUCH_KEY_NUM > 0 */
+		printk("%s:RawData_Short_Base:\n", __func__);
+
 	}
 
 	NVT_LOG("--\n");
@@ -944,7 +901,7 @@ static int32_t RawDataTest_SinglePoint_Sub(int32_t rawdata[], uint8_t RecordResu
 	int32_t i = 0;
 	int32_t j = 0;
 #if TOUCH_KEY_NUM > 0
-    int32_t k = 0;
+	int32_t k = 0;
 #endif /* #if TOUCH_KEY_NUM > 0 */
 	int32_t iArrayIndex = 0;
 	bool isPass = true;
@@ -996,7 +953,7 @@ static int32_t RawDataTest_SinglePoint_Sub(int32_t rawdata[], uint8_t RecordResu
 #endif /* #if TOUCH_KEY_NUM > 0 */
 
 	if (isPass == false) {
-		return -1; // FAIL
+		return -1; /* FAIL */
 	} else {
 		return 0; // PASS
 	}
@@ -1019,56 +976,59 @@ void print_selftest_result(struct seq_file *m, int32_t TestResult, uint8_t Recor
 #endif /* #if TOUCH_KEY_NUM > 0 */
 
 	switch (TestResult) {
-		case 0:
-			nvt_mp_seq_printf(m, " PASS!\n");
-			break;
+	case 0:
+		nvt_mp_seq_printf(m, " PASS!\n");
+		break;
 
-		case 1:
-			nvt_mp_seq_printf(m, " ERROR! Read Data FAIL!\n");
-			break;
+	case 1:
+		nvt_mp_seq_printf(m, " ERROR! Read Data FAIL!\n");
+		break;
 
-		case -1:
-			nvt_mp_seq_printf(m, " FAIL!\n");
-			nvt_mp_seq_printf(m, "RecordResult:\n");
-			for (i = 0; i < y_len; i++) {
-				for (j = 0; j < x_len; j++) {
-					iArrayIndex = i * x_len + j;
-					seq_printf(m, "0x%02X, ", RecordResult[iArrayIndex]);
-				}
-				if (!nvt_mp_test_result_printed)
-					nvt_print_result_log_in_one_line(RecordResult + i * x_len, x_len);
-				nvt_mp_seq_printf(m, "\n");
+	case -1:
+		nvt_mp_seq_printf(m, " FAIL!\n");
+		nvt_mp_seq_printf(m, "RecordResult:\n");
+
+		for (i = 0; i < y_len; i++) {
+			for (j = 0; j < x_len; j++) {
+				iArrayIndex = i * x_len + j;
+				nvt_mp_seq_printf(m, "0x%02X, ", RecordResult[iArrayIndex]);
 			}
-#if TOUCH_KEY_NUM > 0
-			for (k = 0; k < Key_Channel; k++) {
-				iArrayIndex = y_len * x_len + k;
-				seq_printf(m, "0x%02X, ", RecordResult[iArrayIndex]);
-			}
-			if (!nvt_mp_test_result_printed)
-				nvt_print_result_log_in_one_line(RecordResult + y_len * x_len, Key_Channel);
+
 			nvt_mp_seq_printf(m, "\n");
-#endif /* #if TOUCH_KEY_NUM > 0 */
-			nvt_mp_seq_printf(m, "ReadData:\n");
-			for (i = 0; i < y_len; i++) {
-				for (j = 0; j < x_len; j++) {
-					iArrayIndex = i * x_len + j;
-					seq_printf(m, "%5d, ", rawdata[iArrayIndex]);
-				}
-				if (!nvt_mp_test_result_printed)
-					nvt_print_data_log_in_one_line(rawdata + i * x_len, x_len);
-				nvt_mp_seq_printf(m, "\n");
-			}
+		}
+
 #if TOUCH_KEY_NUM > 0
-			for (k = 0; k < Key_Channel; k++) {
-				iArrayIndex = y_len * x_len + k;
-				seq_printf(m, "%5d, ", rawdata[iArrayIndex]);
-			}
-			if (!nvt_mp_test_result_printed)
-				nvt_print_data_log_in_one_line(rawdata + y_len * x_len, Key_Channel);
-			nvt_mp_seq_printf(m, "\n");
+
+		for (k = 0; k < Key_Channel; k++) {
+			iArrayIndex = y_len * x_len + k;
+			nvt_mp_seq_printf(m, "0x%02X, ", RecordResult[iArrayIndex]);
+		}
+
+		nvt_mp_seq_printf(m, "\n");
 #endif /* #if TOUCH_KEY_NUM > 0 */
-			break;
+		nvt_mp_seq_printf(m, "ReadData:\n");
+
+		for (i = 0; i < y_len; i++) {
+			for (j = 0; j < x_len; j++) {
+				iArrayIndex = i * x_len + j;
+				nvt_mp_seq_printf(m, "%5d, ", rawdata[iArrayIndex]);
+			}
+
+			nvt_mp_seq_printf(m, "\n");
+		}
+
+#if TOUCH_KEY_NUM > 0
+
+		for (k = 0; k < Key_Channel; k++) {
+			iArrayIndex = y_len * x_len + k;
+			nvt_mp_seq_printf(m, "%5d, ", rawdata[iArrayIndex]);
+		}
+
+		nvt_mp_seq_printf(m, "\n");
+#endif /* #if TOUCH_KEY_NUM > 0 */
+		break;
 	}
+
 	nvt_mp_seq_printf(m, "\n");
 }
 
@@ -1130,8 +1090,7 @@ static int32_t c_show_selftest(struct seq_file *m, void *v)
 	nvt_mp_test_result_printed = 1;
 
 	NVT_LOG("--\n");
-
-    return 0;
+	return 0;
 }
 
 /*******************************************************
@@ -1565,6 +1524,143 @@ int32_t nvt_mp_parse_dt(struct device_node *root, const char *node_compatible)
 		return -1;
 
 	NVT_LOG("Parse mp criteria done!\n");
+}
+#endif /* #ifdef CONFIG_OF */
+
+#define NVT_RESULT_INVALID 0
+#define NVT_RESULT_PASS 2
+#define NVT_RESULT_FAIL 1
+
+static int nvt_short_test(void)
+{
+	TestResult_Short = 0;
+
+	NVT_LOG("++\n");
+
+	if (mutex_lock_interruptible(&ts->lock)) {
+		return -ERESTARTSYS;
+	}
+
+	if (nvt_get_fw_info()) {
+		mutex_unlock(&ts->lock);
+		NVT_ERR("get fw info failed!\n");
+		return -EAGAIN;
+	}
+
+	if (nvt_switch_FreqHopEnDis(FREQ_HOP_DISABLE)) {
+		mutex_unlock(&ts->lock);
+		NVT_ERR("switch frequency hopping disable failed!\n");
+		return -EAGAIN;
+	}
+
+	if (nvt_check_fw_reset_state(RESET_STATE_NORMAL_RUN)) {
+		mutex_unlock(&ts->lock);
+		NVT_ERR("check fw reset state failed!\n");
+		return -EAGAIN;
+	}
+
+	msleep(100);
+
+	/*---Enter Test Mode---*/
+	if (nvt_clear_fw_status()) {
+		mutex_unlock(&ts->lock);
+		NVT_ERR("clear fw status failed!\n");
+		return -EAGAIN;
+	}
+
+	nvt_change_mode(MP_MODE_CC);
+
+	if (nvt_check_fw_status()) {
+		mutex_unlock(&ts->lock);
+		NVT_ERR("check fw status failed!\n");
+		return -EAGAIN;
+	}
+
+	/*---Leave Test Mode---*/
+	nvt_change_mode(NORMAL_MODE);
+
+	/*--Short Test---*/
+	if (nvt_read_fw_short(RawData_Short) != 0) {
+		TestResult_Short = 1; /* 1:ERROR */
+		if (ts->carrier_system) {
+			TestResult_Short_Diff = 1;
+			TestResult_Short_Base = 1;
+		}
+	} else {
+		/*---Self Test Check ---  0:PASS, -1:FAIL*/
+		if (ts->carrier_system) {
+			TestResult_Short_Diff = RawDataTest_SinglePoint_Sub(RawData_Short_Diff, RecordResult_Short_Diff, X_Channel, Y_Channel,
+											PS_Config_Lmt_Short_Diff_P, PS_Config_Lmt_Short_Diff_N);
+			TestResult_Short_Base = RawDataTest_SinglePoint_Sub(RawData_Short_Base, RecordResult_Short_Base, X_Channel, Y_Channel,
+											PS_Config_Lmt_Short_Base_P, PS_Config_Lmt_Short_Base_N);
+
+			if ((TestResult_Short_Diff == -1) || (TestResult_Short_Base == -1))
+				TestResult_Short = -1;
+			else
+				TestResult_Short = 0;
+		} else {
+			TestResult_Short = RawDataTest_SinglePoint_Sub(RawData_Short, RecordResult_Short, X_Channel, Y_Channel,
+											PS_Config_Lmt_Short_Rawdata_P, PS_Config_Lmt_Short_Rawdata_N);
+		}
+	}
+
+	/*---Reset IC---*/
+	nvt_bootloader_reset();
+
+	mutex_unlock(&ts->lock);
+
+	NVT_LOG("--\n");
+
+	return TestResult_Short;
+}
+
+static int nvt_open_test(void)
+{
+	TestResult_Open = 0;
+
+	NVT_LOG("++\n");
+
+	if (mutex_lock_interruptible(&ts->lock)) {
+		return -ERESTARTSYS;
+	}
+
+	if (nvt_get_fw_info()) {
+		mutex_unlock(&ts->lock);
+		NVT_ERR("get fw info failed!\n");
+		return -EAGAIN;
+	}
+
+	if (nvt_switch_FreqHopEnDis(FREQ_HOP_DISABLE)) {
+		mutex_unlock(&ts->lock);
+		NVT_ERR("switch frequency hopping disable failed!\n");
+		return -EAGAIN;
+	}
+
+	if (nvt_check_fw_reset_state(RESET_STATE_NORMAL_RUN)) {
+		mutex_unlock(&ts->lock);
+		NVT_ERR("check fw reset state failed!\n");
+		return -EAGAIN;
+	}
+
+	msleep(100);
+
+	/*---Enter Test Mode---*/
+	if (nvt_clear_fw_status()) {
+		mutex_unlock(&ts->lock);
+		NVT_ERR("clear fw status failed!\n");
+		return -EAGAIN;
+	}
+
+	nvt_change_mode(MP_MODE_CC);
+
+	if (nvt_check_fw_status()) {
+		mutex_unlock(&ts->lock);
+		NVT_ERR("check fw status failed!\n");
+		return -EAGAIN;
+	}
+
+	/*---Leave Test Mode---*/
+	nvt_change_mode(NORMAL_MODE);
 
 	return 0;
 }

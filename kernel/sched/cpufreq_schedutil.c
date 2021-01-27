@@ -527,8 +527,6 @@ static ssize_t iowait_boost_enable_store(struct gov_attr_set *attr_set,
 
 	tunables->iowait_boost_enable = enable;
 
-	tunables->iowait_boost_enable = enable;
-
 	return count;
 }
 

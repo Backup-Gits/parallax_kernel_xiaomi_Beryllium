@@ -259,7 +259,7 @@ static int32_t c_show(struct seq_file *m, void *v)
 	seq_puts(m, "\n");
 #endif
 
-	seq_printf(m, "\n\n");
+	seq_puts(m, "\n\n");
 	return 0;
 }
 
@@ -769,6 +769,7 @@ int32_t nvt_get_lockdown_info(char *lockdata)
 
 	if (mutex_lock_interruptible(&ts->lock))
 		return -ERESTARTSYS;
+	}
 
 	ret = nvt_get_oem_data(data_buf, 0x1E000, 8);
 

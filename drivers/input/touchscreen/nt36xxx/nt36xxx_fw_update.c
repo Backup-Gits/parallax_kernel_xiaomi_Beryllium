@@ -32,30 +32,7 @@
 #define NVT_FLASH_END_FLAG_LEN 3
 #define NVT_FLASH_END_FLAG_ADDR (fw_need_write_size - NVT_FLASH_END_FLAG_LEN)
 
-const struct firmware *fw_entry = NULL;
-static size_t fw_need_write_size = 0;
-
-static int32_t nvt_get_fw_need_write_size(const struct firmware *fw_entry)
-{
-	int32_t i = 0;
-	int32_t total_sectors_to_check = 0;
-
-	total_sectors_to_check = fw_entry->size / FLASH_SECTOR_SIZE;
-	/* printk("total_sectors_to_check = %d\n", total_sectors_to_check); */
-
-	for (i = total_sectors_to_check; i > 0; i--) {
-		/* printk("current end flag address checked = 0x%X\n", i * FLASH_SECTOR_SIZE - NVT_FLASH_END_FLAG_LEN); */
-		/* check if there is end flag "NVT" at the end of this sector */
-		if (strncmp(&fw_entry->data[i * FLASH_SECTOR_SIZE - NVT_FLASH_END_FLAG_LEN], "NVT", NVT_FLASH_END_FLAG_LEN) == 0) {
-			fw_need_write_size = i * FLASH_SECTOR_SIZE;
-			NVT_LOG("fw_need_write_size = %zu(0x%zx)\n", fw_need_write_size, fw_need_write_size);
-			return 0;
-		}
-	}
-
-	NVT_ERR("end flag \"NVT\" not found!\n");
-	return -1;
-}
+const struct firmware *fw_entry;
 
 /*******************************************************
 Description:
@@ -68,7 +45,7 @@ int32_t update_firmware_request(char *filename)
 {
 	int32_t ret = 0;
 
-	if (NULL == filename) {
+	if (filename == NULL) {
 		return -1;
 	}
 
@@ -182,7 +159,7 @@ int32_t Resume_PD(void)
 
 	// Check 0xAA (Resume Command)
 	retry = 0;
-	while(1) {
+	while (1) {
 		msleep(1);
 		buf[0] = 0x00;
 		buf[1] = 0x00;
@@ -332,7 +309,7 @@ int32_t Init_BootLoader(void)
 
 	// Check 0xAA (Initiate Flash Block)
 	retry = 0;
-	while(1) {
+	while (1) {
 		msleep(1);
 		buf[0] = 0x00;
 		buf[1] = 0x00;
@@ -351,7 +328,7 @@ int32_t Init_BootLoader(void)
 		}
 	}
 
-	NVT_LOG("Init OK \n");
+	NVT_LOG("Init OK\n");
 	msleep(20);
 
 	return 0;
@@ -564,7 +541,7 @@ int32_t Erase_Flash(void)
 		}
 	}
 
-	NVT_LOG("Erase OK \n");
+	NVT_LOG("Erase OK\n");
 	return 0;
 }
 
@@ -649,7 +626,7 @@ int32_t Write_Flash(void)
 		else
 			tmpvalue=(Flash_Address >> 16) + ((Flash_Address >> 8) & 0xFF) + (Flash_Address & 0xFF) + 0x00 + (fw_need_write_size - Flash_Address - 1);
 
-		for (k = 0; k < min(fw_need_write_size - Flash_Address, (size_t)256); k++)
+		for (k = 0; k < min(fw_entry->size - Flash_Address, (size_t)256); k++)
 			tmpvalue += fw_entry->data[Flash_Address + k];
 
 		tmpvalue = 255 - tmpvalue + 1;
@@ -661,7 +638,7 @@ int32_t Write_Flash(void)
 		buf[3] = ((Flash_Address >> 8) & 0xFF);
 		buf[4] = (Flash_Address & 0xFF);
 		buf[5] = 0x00;
-		buf[6] = min(fw_need_write_size - Flash_Address, (size_t)256) - 1;
+		buf[6] = min(fw_entry->size - Flash_Address, (size_t)256) - 1;
 		buf[7] = tmpvalue;
 		ret = CTP_I2C_WRITE(ts->client, I2C_HW_Address, buf, 8);
 		if (ret < 0) {
@@ -735,7 +712,8 @@ int32_t Write_Flash(void)
 		}
 	}
 
-	NVT_LOG("Program OK         \n");
+	NVT_LOG("Programming...%2d%%\n", 100);
+	NVT_LOG("Program OK        \n");
 	return 0;
 }
 
@@ -827,7 +805,7 @@ int32_t Verify_Flash(void)
 		}
 	}
 
-	NVT_LOG("Verify OK \n");
+	NVT_LOG("Verify OK\n");
 	return 0;
 }
 

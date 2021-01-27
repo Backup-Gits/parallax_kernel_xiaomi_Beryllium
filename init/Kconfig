@@ -1452,17 +1452,17 @@ config SCHED_TUNE
 
 	  If unsure, say N.
 
-config DYNAMIC_STUNE_BOOST
-	bool "Dynamic SchedTune boosting support"
+config STUNE_ASSIST
+	bool "SchedTune configuration helper"
 	depends on SCHED_TUNE
+	depends on ANDROID
 	help
-	  This option extends the SchedTune framework and provides APIs to
-	  activate and reset SchedTune boosting from anywhere in the kernel.
+	  This option enables in-kernel overrides for SchedTune values.
 
           If unsure, say N.
 
 config CPUSET_ASSIST
-	bool "CPUSet configuration helper"
+	bool "Cpuset configuration helper"
 	depends on CPUSETS
 	depends on ANDROID
 	help

@@ -1,2 +1,3 @@
-* Updated to 4.9.245
-* Updated wireguard to 1.0.20201112
+* Updated to 4.9.248
+* Fixed network traffic indicator in MIUI (again)
+* Balance schedutil up/down rate limit

@@ -1,28 +1,15 @@
-clear
-make clean && make distclean && make mrproper
+#!/bin/bash
 
-if [ -r clang ]; then
-  echo clang found! check for update...
-  cd clang
-  git config pull.rebase false
-  git pull
-  cd ..
+#set -e
 
-else
-  echo clang not found!, git cloning it now....
-  git clone https://github.com/kdrag0n/proton-clang.git clang
-
-fi
-
-
-KERNEL_DEFCONFIG=parallax_defconfig
+## Copy this script inside the kernel directory
+KERNEL_DEFCONFIG=beryllium_defconfig
 ANYKERNEL3_DIR=$PWD/AnyKernel3/
-KERNELDIR=$PWD/
-FINAL_KERNEL_ZIP=parallax_v5.0.zip
-export PATH="${PWD}/clang/bin:${PATH}"
+FINAL_KERNEL_ZIP=Optimus_Drunk_Beryllium_v11.1.zip
+export PATH="$KERNELDIR/prebuilts/proton-clang/bin:${PATH}"
 export ARCH=arm64
 export SUBARCH=arm64
-export KBUILD_COMPILER_STRING="$(${PWD}/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
+export KBUILD_COMPILER_STRING="$($KERNELDIR/prebuilts/proton-clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
 # Speed up build process
 MAKE="./makeparallel"
 
@@ -35,8 +22,7 @@ nocol='\033[0m'
 
 # Clean build always lol
 echo "**** Cleaning ****"
-rm -r out
-mkdir out
+mkdir -p out
 make O=out clean
 
 echo "**** Kernel defconfig is set to $KERNEL_DEFCONFIG ****"
@@ -57,14 +43,14 @@ make -j$(nproc --all) O=out \
 echo "**** Verify Image.gz-dtb ****"
 ls $PWD/out/arch/arm64/boot/Image.gz-dtb
 
-# Anykernel 3 time!!
+#Anykernel 2 time!!
 echo "**** Verifying AnyKernel3 Directory ****"
 ls $ANYKERNEL3_DIR
 echo "**** Removing leftovers ****"
 rm -rf $ANYKERNEL3_DIR/Image.gz-dtb
 rm -rf $ANYKERNEL3_DIR/$FINAL_KERNEL_ZIP
 
-echo "**** Copying Image.gz-dtb & dtbo.img ****"
+echo "**** Copying Image.gz-dtb ****"
 cp $PWD/out/arch/arm64/boot/Image.gz-dtb $ANYKERNEL3_DIR/
 
 echo "**** Time to zip up! ****"
@@ -76,7 +62,7 @@ echo "**** Done, here is your sha1 ****"
 cd ..
 rm -rf $ANYKERNEL3_DIR/$FINAL_KERNEL_ZIP
 rm -rf $ANYKERNEL3_DIR/Image.gz-dtb
-#rm -rf out/
+rm -rf out/
 
 BUILD_END=$(date +"%s")
 DIFF=$(($BUILD_END - $BUILD_START))
